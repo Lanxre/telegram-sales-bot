@@ -5,12 +5,9 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 
 from config import load_settings
+from data import CommandList
 from dispatcher import create_dispatcher
 from logger import LoggerBuilder
-
-from data import CommandList
-
-from core.infrastructure import db_manager
 
 logger = LoggerBuilder("TelegramBot").add_stream_handler().build()
 
@@ -24,13 +21,10 @@ async def main() -> None:
         default=DefaultBotProperties(parse_mode=ParseMode.HTML),
     )
 
-    # Set commands 
+    # Set commands
     commands = CommandList()
     commands.load_from_json("./data/command_list.json")
     await bot.set_my_commands(commands=commands.get_commands())
-
-    # Db manager
-    db_manager.get_repo()
 
     await dp.start_polling(bot)
 
