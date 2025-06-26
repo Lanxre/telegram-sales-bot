@@ -1,0 +1,10 @@
+[project]
+name = "telegram-sales-bot"
+version = "0.1.0"
+description = "Telegram bot for sales"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "aiogram>=3.20.0.post0",
+    "pydantic-settings>=2.10.1",
+]
