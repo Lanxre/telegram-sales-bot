@@ -37,7 +37,7 @@ class DatabaseSettings(ConfigBase):
     password: Optional[str] = Field(..., min_length=1, description="Database password")
     host: Optional[str] = Field(default="localhost", description="Database host")
     port: Optional[str] = Field(default=5432, description="Database port")
-    driver: Optional[str] = Field(default="asyncpg", description="Database driver")
+    driver: Optional[str] = Field(default="aiosqlite", description="Database driver")
 
     @field_validator("name", "user", "password")
     @classmethod

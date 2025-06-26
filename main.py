@@ -10,6 +10,8 @@ from logger import LoggerBuilder
 
 from data import CommandList
 
+from core.infrastructure import db_manager
+
 logger = LoggerBuilder("TelegramBot").add_stream_handler().build()
 
 db_settings, telegram_settings = load_settings()
@@ -27,6 +29,8 @@ async def main() -> None:
     commands.load_from_json("./data/command_list.json")
     await bot.set_my_commands(commands=commands.get_commands())
 
+    # Db manager
+    db_manager.get_repo()
 
     await dp.start_polling(bot)
 

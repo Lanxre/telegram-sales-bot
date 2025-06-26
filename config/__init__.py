@@ -1,3 +1,3 @@
-from .config import load_settings
+from .config import load_settings, DatabaseSettings
 
-__all__ = ["load_settings"]
+__all__ = ["load_settings", "DatabaseSettings"]
