@@ -1,0 +1,14 @@
+[
+    {
+        "name": "/start",
+        "description": "initial message command"
+    },
+    {
+        "name": "/help",
+        "description": "list of all bot commands"
+    },
+    {
+        "name": "/catalog",
+        "description": "list of all items and there prices"
+    }
+]
