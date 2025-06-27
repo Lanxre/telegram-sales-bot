@@ -1,9 +1,10 @@
+from typing import List, Optional
 from sqlalchemy.exc import IntegrityError
 
 from core.infrastructure.database import DatabaseManager
-from core.infrastructure.database.models import User
-from core.infrastructure.repositories import UserRepository
-from core.internal.models import UserCreate
+from core.infrastructure.database.models import User, Product
+from core.infrastructure.repositories import UserRepository, ProductRepository
+from core.internal.models import UserCreate, ProductCreate, ProductUpdate
 
 from logger import LoggerBuilder
 
@@ -13,6 +14,7 @@ class ShopService:
     def __init__(self, db_manager: DatabaseManager):
         self.db_manager = db_manager
 
+    # USER
     async def create_user(self, user_data: UserCreate) -> User:
         """Create a new user or return existing user if telegram_id already exists."""
         async with self.db_manager.session_pool() as session:
@@ -37,3 +39,33 @@ class ShopService:
                 if existing_user:
                     return existing_user
                 raise  # Re-raise if not a duplicate key error
+    
+    # PRODUCT
+    async def add_product(self, product_data: ProductCreate) -> Product:
+        """Add a product to the catalog."""
+        async with self.db_manager.session_pool() as session:
+            product_repo: ProductRepository = self.db_manager.get_repo(ProductRepository, session)
+            product = await product_repo.create(session, product_data)
+            await session.commit()
+            logger.info(f"Product was create: {product.id}")
+            return product
+    
+    async def update_product(self, product_id: int,  product_data: ProductUpdate) -> Optional[Product]:
+        """Update product details."""
+        async with self.db_manager.session_pool() as session:
+            product_repo: ProductRepository = self.db_manager.get_repo(ProductRepository, session)
+            product = await product_repo.update(session, product_id, product_data)
+            await session.commit()
+            logger.info(f"Product was update: {product.id}")
+            return product
+    
+
+    async def get_all_products(self) -> List[Product]:
+        """Update product details."""
+        async with self.db_manager.session_pool() as session:
+            product_repo: ProductRepository = self.db_manager.get_repo(ProductRepository, session)
+            products = await product_repo.get_multi(session)
+            logger.info(f"Responce all products: {len(products)}")
+            return products
+
+    # ORDER

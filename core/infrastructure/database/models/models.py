@@ -1,5 +1,5 @@
+from typing import List, Optional
 from sqlalchemy import (
-    Column,
     Integer,
     String,
     Float,
@@ -8,8 +8,8 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
 )
-from sqlalchemy.orm import relationship
-from datetime import datetime
+from sqlalchemy.orm import relationship, Mapped, mapped_column
+from datetime import datetime, timezone
 
 
 from .base import BaseModel
@@ -18,55 +18,73 @@ from .base import BaseModel
 class Product(BaseModel):
     __tablename__ = "Product"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String, nullable=False)
-    description = Column(String)
-    price = Column(Float, nullable=False)
-    image = Column(LargeBinary)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(String)
+    price: Mapped[float] = mapped_column(Float, nullable=False)
+    image: Mapped[Optional[bytes]] = mapped_column(LargeBinary)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
 
-    # Relationship to orders through Product_Order
-    orders = relationship("Order", secondary="Product_Order", back_populates="products")
-
+    # Primary many-to-many relationship to orders
+    orders: Mapped[List["Order"]] = relationship(
+        secondary="Product_Order",
+        back_populates="products",
+    )
+    # Auxiliary relationship to ProductOrder (read-only)
+    product_orders: Mapped[List["ProductOrder"]] = relationship(
+        back_populates="product",
+        viewonly=True,  # Make read-only to avoid foreign key conflicts
+    )
 
 class ProductOrder(BaseModel):
     __tablename__ = "Product_Order"
 
-    product_id = Column(Integer, ForeignKey("Product.id"), primary_key=True)
-    order_id = Column(Integer, ForeignKey("Order.id"), primary_key=True)
+    product_id: Mapped[int] = mapped_column(Integer, ForeignKey("Product.id"), primary_key=True)
+    order_id: Mapped[int] = mapped_column(Integer, ForeignKey("Order.id"), primary_key=True)
 
     # Relationships
-    product = relationship("Product", backref="product_orders")
-    order = relationship("Order", backref="order_products")
-
+    product: Mapped["Product"] = relationship(
+        back_populates="product_orders",
+        viewonly=True,  # Make read-only to avoid foreign key conflicts
+    )
+    order: Mapped["Order"] = relationship(
+        back_populates="order_products",
+        viewonly=True,  # Make read-only to avoid foreign key conflicts
+    )
 
 class Order(BaseModel):
     __tablename__ = "Order"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    total_price = Column(Float, nullable=False)
-    total_count = Column(Integer, nullable=False)
-    order_note = Column(Text)
-    user_id = Column(Integer, ForeignKey("users.telegram_id"))
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    total_price: Mapped[float] = mapped_column(Float, nullable=False)
+    total_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    order_note: Mapped[Optional[str]] = mapped_column(Text)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.telegram_id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
 
-    # Relationships
-    user = relationship("User", back_populates="orders")
-    products = relationship(
-        "Product", secondary="Product_Order", back_populates="orders"
+    # Many-to-one relationship to user
+    user: Mapped["User"] = relationship(back_populates="orders")
+    # Primary many-to-many relationship to products
+    products: Mapped[List["Product"]] = relationship(
+        secondary="Product_Order",
+        back_populates="orders",
     )
-
+    # Auxiliary relationship to ProductOrder (read-only)
+    order_products: Mapped[List["ProductOrder"]] = relationship(
+        back_populates="order",
+        viewonly=True,  # Make read-only to avoid foreign key conflicts
+    )
 
 class User(BaseModel):
     __tablename__ = "users"
 
-    telegram_id = Column(Integer, primary_key=True)
-    username = Column(String)
-    full_name = Column(String)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    telegram_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    username: Mapped[Optional[str]] = mapped_column(String)
+    full_name: Mapped[Optional[str]] = mapped_column(String)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
 
-    # Relationship to orders
-    orders = relationship("Order", back_populates="user")
+    # One-to-many relationship to orders
+    orders: Mapped[List["Order"]] = relationship(back_populates="user")
