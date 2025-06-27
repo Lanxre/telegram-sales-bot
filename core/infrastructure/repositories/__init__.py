@@ -1,4 +1,5 @@
 from .abstract_repository import SQLAlchemyRepository
-from .repository import UserRepository
+from .user_repository import UserRepository
+from .product_repository import ProductRepository
 
-__all__ = ["SQLAlchemyRepository", "UserRepository"]
+__all__ = ["SQLAlchemyRepository", "UserRepository", "ProductRepository"]
