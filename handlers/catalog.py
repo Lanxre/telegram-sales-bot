@@ -36,9 +36,8 @@ async def command_catalog(message: Message) -> None:
     )
 
     if product.image:
-        image_stream = BytesIO(product.image)
-        image_file = BufferedInputFile(
-            image_stream.getvalue(), filename=f"product_{product.id}.jpg"
+        image_file = await ImageSelector.get_image_file(
+            product.image, f"product_{product.id}.jpg"
         )
         await message.answer_photo(
             photo=image_file,
@@ -90,7 +89,7 @@ async def process_catalog_navigation(callback: CallbackQuery, bot: Bot) -> None:
     # Update the message
     try:
         if product.image:
-            image_file = ImageSelector.get_image_file(
+            image_file = await ImageSelector.get_image_file(
                 product.image, f"product_{product.id}.jpg"
             )
             await bot.edit_message_media(
@@ -112,7 +111,7 @@ async def process_catalog_navigation(callback: CallbackQuery, bot: Bot) -> None:
     await callback.answer()
 
 
-@catalog_router.message(Command("add_product"), IsAdmin())
+@catalog_router.message(Command("addproduct"), IsAdmin())
 async def command_add_product(message: Message, state: FSMContext) -> None:
     await message.answer("Пожалуйста введите название предмета.")
     await state.set_state(AddProduct.waiting_for_name)
@@ -166,7 +165,7 @@ async def process_product_price(message: Message, state: FSMContext) -> None:
 @catalog_router.message(AddProduct.waiting_for_image)
 async def process_product_image(message: Message, state: FSMContext, bot: Bot) -> None:
     image_bytes = await ImageSelector.get_image_bytes(message, bot)
-    
+
     product_data: ProductCreate = await StateToModel.from_context(state, ProductCreate)
     product_data.image = image_bytes.read()
 
@@ -179,4 +178,3 @@ async def process_product_image(message: Message, state: FSMContext, bot: Bot) -
     except Exception as e:
         await message.answer(f"Ошибка при добавление предмета: {str(e)}")
     await state.clear()
-

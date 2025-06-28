@@ -10,5 +10,9 @@
     {
         "name": "/catalog",
         "description": "list of all items and there prices"
+    },
+    {
+        "name": "/addproduct",
+        "description": "Only for admins. Can add product to catalog"
     }
 ]
