@@ -10,6 +10,7 @@ from core.infrastructure.services import ShopService
 from core.internal.models import ProductCreate
 from filters import IsAdmin
 from keyboards import get_catalog_keyboard
+from utils import ImageSelector
 
 from .states import AddProduct
 
@@ -89,9 +90,8 @@ async def process_catalog_navigation(callback: CallbackQuery, bot: Bot) -> None:
     # Update the message
     try:
         if product.image:
-            image_stream = BytesIO(product.image)
-            image_file = BufferedInputFile(
-                image_stream.getvalue(), filename=f"product_{product.id}.jpg"
+            image_file = ImageSelector.get_image_file(
+                product.image, f"product_{product.id}.jpg"
             )
             await bot.edit_message_media(
                 media=InputMediaPhoto(media=image_file, caption=caption),
@@ -170,11 +170,7 @@ async def process_product_image(message: Message, state: FSMContext, bot: Bot) -
     description = data.get("description")
     price = data.get("price")
 
-    photo = message.photo[-1]
-    file_id = photo.file_id
-    file = await bot.get_file(file_id)
-    file_path = file.file_path
-    image_bytes = await bot.download_file(file_path)
+    image_bytes = await ImageSelector.get_image_bytes(message, bot)
 
     try:
         product = await shop_service.add_product(
