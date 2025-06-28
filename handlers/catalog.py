@@ -10,7 +10,7 @@ from core.infrastructure.services import ShopService
 from core.internal.models import ProductCreate
 from filters import IsAdmin
 from keyboards import get_catalog_keyboard
-from utils import ImageSelector
+from utils import ImageSelector, StateToModel
 
 from .states import AddProduct
 
@@ -165,22 +165,13 @@ async def process_product_price(message: Message, state: FSMContext) -> None:
 
 @catalog_router.message(AddProduct.waiting_for_image)
 async def process_product_image(message: Message, state: FSMContext, bot: Bot) -> None:
-    data = await state.get_data()
-    name = data.get("name")
-    description = data.get("description")
-    price = data.get("price")
-
     image_bytes = await ImageSelector.get_image_bytes(message, bot)
+    
+    product_data: ProductCreate = await StateToModel.from_context(state, ProductCreate)
+    product_data.image = image_bytes.read()
 
     try:
-        product = await shop_service.add_product(
-            product_data=ProductCreate(
-                name=name,
-                description=description,
-                price=price,
-                image=image_bytes.read(),
-            )
-        )
+        product = await shop_service.add_product(product_data)
         await message.answer(
             f"Предмет добавлен в каталог: {product.name} (ID: {product.id}, Price: {product.price}$)"
         )
@@ -188,3 +179,4 @@ async def process_product_image(message: Message, state: FSMContext, bot: Bot) -
     except Exception as e:
         await message.answer(f"Ошибка при добавление предмета: {str(e)}")
     await state.clear()
+
