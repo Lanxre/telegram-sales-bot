@@ -8,7 +8,7 @@ from core.internal.models import UserCreate, ProductCreate, ProductUpdate
 
 from logger import LoggerBuilder
 
-logger = LoggerBuilder("Service").add_stream_handler().build()
+logger = LoggerBuilder("Shop - Service").add_stream_handler().build()
 
 class ShopService:
     def __init__(self, db_manager: DatabaseManager):
@@ -49,7 +49,15 @@ class ShopService:
             await session.commit()
             logger.info(f"Product was create: {product.id}")
             return product
-    
+
+    async def delete_product(self, prodcut_id: int) -> bool:
+        async with self.db_manager.session_pool() as session:
+            product_repo: ProductRepository = self.db_manager.get_repo(ProductRepository, session)
+            is_delete = await product_repo.delete(session, prodcut_id)
+            await session.commit()
+            logger.info(f"Product was delete: {is_delete}")
+            return is_delete
+
     async def update_product(self, product_id: int,  product_data: ProductUpdate) -> Optional[Product]:
         """Update product details."""
         async with self.db_manager.session_pool() as session:

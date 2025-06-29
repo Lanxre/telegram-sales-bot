@@ -1,97 +1,107 @@
-from io import BytesIO
-
 from aiogram import Bot, Router, html
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
-from aiogram.types import BufferedInputFile, CallbackQuery, InputMediaPhoto, Message
+from aiogram.types import CallbackQuery, InputMediaPhoto, Message
 
 from core.infrastructure import db_manager
-from core.infrastructure.services import ShopService
+from core.infrastructure.services import (
+    CaptionStrategyType,
+    CatalogService,
+    DeleteCaptionArgs,
+    ProductCaptionArgs,
+    ShopService,
+)
 from core.internal.models import ProductCreate
 from filters import IsAdmin
-from keyboards import get_catalog_keyboard
+from keyboards import get_catalog_keyboard, get_confirm_delete_keyboard
 from utils import ImageSelector, StateToModel
 
 from .states import AddProduct
 
 catalog_router = Router()
 shop_service = ShopService(db_manager)
+catalog_service = CatalogService(shop_service)
 
 
 @catalog_router.message(Command("catalog"))
 async def command_catalog(message: Message) -> None:
-    products = await shop_service.get_all_products()
+    try:
+        products = await catalog_service.get_products()
 
-    if not products:
-        await message.answer("Нет предметов для продажи")
-        return
+        if not products:
+            await message.answer(catalog_service.config.no_products_text)
+            return
 
-    current_index = 0
-    product = products[current_index]
-
-    caption = (
-        f"Название: {html.bold(product.name)}\n\n"
-        f"Описание: {html.italic(product.description or 'Нет описания')}\n\n"
-        f"Стоимость: {product.price}$"
-    )
-
-    if product.image:
-        image_file = await ImageSelector.get_image_file(
-            product.image, f"product_{product.id}.jpg"
+        product = products[0]
+        caption = catalog_service.build_caption(
+            strategy_type=CaptionStrategyType.PRODUCT,
+            args=ProductCaptionArgs(product=product),
         )
-        await message.answer_photo(
-            photo=image_file,
-            caption=caption,
-            reply_markup=get_catalog_keyboard(current_index, len(products)),
-        )
-    else:
-        await message.answer(
-            text=caption,
-            reply_markup=get_catalog_keyboard(current_index, len(products)),
-        )
+        is_admin = await IsAdmin()(message)
+
+        if image_file := await catalog_service.get_product_image(product.id, product):
+            await message.answer_photo(
+                photo=image_file,
+                caption=caption,
+                reply_markup=get_catalog_keyboard(0, len(products), is_admin),
+            )
+        else:
+            await message.answer(
+                text=caption,
+                reply_markup=get_catalog_keyboard(0, len(products), is_admin),
+            )
+
+    except Exception as e:
+        await message.answer(catalog_service.config.error_text.format(error=str(e)))
 
 
 @catalog_router.callback_query(lambda c: c.data.startswith("catalog_"))
 async def process_catalog_navigation(callback: CallbackQuery, bot: Bot) -> None:
-    # Extract action and current index from callback data
-    action, current_index = (
-        callback.data.split("_")[1],
-        int(callback.data.split("_")[2]),
-    )
+    parts = callback.data.split("_")
 
-    # Get all products
-    products = await shop_service.get_all_products()
-    if not products:
-        await callback.message.edit_text("Нет предметов для продажи")
-        await callback.answer()
-        return
+    if len(parts) != 3:
+        raise ValueError("Invalid callback data format")
 
-    # Calculate new index
-    new_index = current_index
-    if action == "prev" and current_index > 0:
-        new_index = current_index - 1
-    elif action == "next" and current_index < len(products) - 1:
-        new_index = current_index + 1
+    action, current_index = parts[1], int(parts[2])
 
-    # Get the new product
-    product = products[new_index]
+    if action in ["prev", "next"]:
+        await handle_navigation(callback, bot, action, current_index)
+    elif action == "delete":
+        await handle_delete(callback, bot, current_index)
+    elif action == "edit":
+        await handle_edit(callback, bot, current_index)
 
-    # Prepare caption
-    caption = (
-        f"Название: {html.bold(product.name)}\n\n"
-        f"Описание: {html.italic(product.description or 'Нет описания')}\n\n"
-        f"Стоимость: {product.price}$"
-    )
 
-    # Prepare inline keyboard
-    keyboard = get_catalog_keyboard(new_index, len(products))
-
-    # Update the message
+async def handle_navigation(
+    callback: CallbackQuery, bot: Bot, action: str, current_index: int
+) -> None:
     try:
-        if product.image:
-            image_file = await ImageSelector.get_image_file(
-                product.image, f"product_{product.id}.jpg"
-            )
+        products = await catalog_service.get_products()
+
+        if not products:
+            await callback.message.edit_text(catalog_service.config.no_products_text)
+            await callback.answer()
+            return
+
+        # Calculate new index
+        new_index = max(
+            0,
+            min(
+                current_index
+                + (-1 if action == "prev" else 1 if action == "next" else 0),
+                len(products) - 1,
+            ),
+        )
+
+        product = products[new_index]
+        caption = catalog_service.build_caption(
+            strategy_type=CaptionStrategyType.PRODUCT,
+            args=ProductCaptionArgs(product=product),
+        )
+        is_admin = await IsAdmin()(callback)
+        keyboard = get_catalog_keyboard(new_index, len(products), is_admin)
+
+        if image_file := await catalog_service.get_product_image(product.id, product):
             await bot.edit_message_media(
                 media=InputMediaPhoto(media=image_file, caption=caption),
                 chat_id=callback.message.chat.id,
@@ -105,10 +115,61 @@ async def process_catalog_navigation(callback: CallbackQuery, bot: Bot) -> None:
                 caption=caption,
                 reply_markup=keyboard,
             )
-    except Exception as e:
-        await callback.message.edit_text(f"Ошибка в обработке предмета: {str(e)}")
 
-    await callback.answer()
+        await callback.answer()
+
+    except Exception as e:
+        await callback.message.edit_text(
+            catalog_service.config.error_text.format(error=str(e))
+        )
+        await callback.answer()
+
+
+async def handle_delete(callback: CallbackQuery, bot: Bot, current_index: int):
+    try:
+        products = await catalog_service.get_products()
+
+        if not products or current_index >= len(products):
+            await callback.answer(catalog_service.config.no_products_text)
+            return
+
+        product = products[current_index]
+        delete_caption = catalog_service.build_caption(
+            strategy_type=CaptionStrategyType.DELETE,
+            args=DeleteCaptionArgs(product_name=product.name),
+        )
+        keyboard = get_confirm_delete_keyboard(product.id)
+
+        await callback.message.edit_caption(
+            caption=delete_caption,
+            reply_markup=keyboard,
+        )
+        await callback.answer()
+
+    except Exception as e:
+        await callback.message.edit_text(
+            catalog_service.config.error_text.format(error=str(e))
+        )
+        await callback.answer()
+
+
+@catalog_router.callback_query(lambda c: c.data.startswith("confirm_delete_"))
+async def confirm_delete(callback: CallbackQuery):
+    product_id = int(callback.data.split("_")[2])
+    try:
+        is_delete = await catalog_service.delete_product(product_id)
+        if is_delete:
+            caption = catalog_service.config.delete_success.format(
+                name=html.bold(product_id)
+            )
+            await callback.message.edit_caption(caption=caption)
+
+    except Exception as e:
+        await callback.answer(catalog_service.config.error_text.format(error=str(e)))
+
+
+async def handle_edit(callback: CallbackQuery, bot: Bot, current_index: int):
+    pass
 
 
 @catalog_router.message(Command("addproduct"), IsAdmin())

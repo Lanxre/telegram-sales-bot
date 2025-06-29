@@ -25,7 +25,4 @@ with open("admin_ids.txt", "r", encoding="utf-8") as f:
 
 class IsAdmin(BaseFilter):
     async def __call__(self, message: Message) -> bool:
-        if message.from_user.id not in ADMIN_IDS:
-            await message.answer("This command is restricted to admins.")
-
         return message.from_user.id in ADMIN_IDS
