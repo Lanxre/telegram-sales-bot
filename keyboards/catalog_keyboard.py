@@ -61,5 +61,16 @@ def get_catalog_keyboard(
 def get_confirm_delete_keyboard(product_id: int) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text="✅ Подтвердить", callback_data=f"confirm_delete_{product_id}")
+    builder.button(text="❌ Отменить", callback_data=f"cancel_delete_{product_id}") 
     builder.adjust(2)
+    return builder.as_markup()
+
+def get_edit_keyboard(product_id: int, current_index: int) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text="✏️ Название", callback_data=f"edit_name_{product_id}")
+    builder.button(text="📝 Описание", callback_data=f"edit_desc_{product_id}")
+    builder.button(text="💵 Цена", callback_data=f"edit_price_{product_id}")
+    builder.button(text="🖼️ Изображение", callback_data=f"edit_image_{product_id}")
+    builder.button(text="⬅️ Назад", callback_data=f"catalog_prev_{current_index}")
+    builder.adjust(2, 2, 1)
     return builder.as_markup()
