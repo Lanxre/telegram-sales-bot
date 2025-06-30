@@ -1,6 +1,6 @@
 from aiogram import Bot, Router, html
 from aiogram.filters import Command
-from aiogram.fsm.context import FSMContext
+
 from aiogram.types import CallbackQuery, InputMediaPhoto, Message
 
 from core.infrastructure import db_manager
@@ -12,16 +12,14 @@ from core.infrastructure.services import (
     ProductCaptionArgs,
     ShopService,
 )
-from core.internal.models import ProductCreate
+
 from filters import IsAdmin
 from keyboards import (
     get_catalog_keyboard,
     get_confirm_delete_keyboard,
     get_edit_keyboard,
 )
-from utils import ImageSelector, StateToModel
 
-from .states import AddProduct
 
 catalog_router = Router()
 shop_service = ShopService(db_manager)
