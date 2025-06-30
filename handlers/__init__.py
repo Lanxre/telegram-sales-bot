@@ -1,5 +1,14 @@
-from .initial import initial_router
 from .catalog import catalog_router
-
 from .handle_router import HandleRouters
-__routers__ = HandleRouters(routers=(initial_router, catalog_router, ))
+from .initial import initial_router
+from .product_add import product_add_router
+from .product_edit import product_edit_router
+
+catalog_router.include_routers(product_edit_router, product_add_router)
+
+__routers__ = HandleRouters(
+    routers=(
+        initial_router,
+        catalog_router,
+    )
+)

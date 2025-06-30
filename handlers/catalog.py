@@ -5,6 +5,7 @@ from aiogram.types import CallbackQuery, InputMediaPhoto, Message
 
 from core.infrastructure import db_manager
 from core.infrastructure.services import (
+    CallbackAction,
     CaptionStrategyType,
     CatalogService,
     DeleteCaptionArgs,
@@ -13,7 +14,11 @@ from core.infrastructure.services import (
 )
 from core.internal.models import ProductCreate
 from filters import IsAdmin
-from keyboards import get_catalog_keyboard, get_confirm_delete_keyboard
+from keyboards import (
+    get_catalog_keyboard,
+    get_confirm_delete_keyboard,
+    get_edit_keyboard,
+)
 from utils import ImageSelector, StateToModel
 
 from .states import AddProduct
@@ -62,14 +67,18 @@ async def process_catalog_navigation(callback: CallbackQuery, bot: Bot) -> None:
     if len(parts) != 3:
         raise ValueError("Invalid callback data format")
 
-    action, current_index = parts[1], int(parts[2])
+    try:
+        action = CallbackAction[parts[1].upper()]
+        current_index = int(parts[2])
+    except KeyError:
+        raise ValueError(f"Unknown callback action: {parts[1]}")
 
-    if action in ["prev", "next"]:
+    if action == CallbackAction.PREV or action == CallbackAction.NEXT:
         await handle_navigation(callback, bot, action, current_index)
-    elif action == "delete":
+    elif action == CallbackAction.DELETE:
         await handle_delete(callback, bot, current_index)
-    elif action == "edit":
-        await handle_edit(callback, bot, current_index)
+    elif action == CallbackAction.EDIT:
+        await handle_edit(callback, current_index)
 
 
 async def handle_navigation(
@@ -88,7 +97,13 @@ async def handle_navigation(
             0,
             min(
                 current_index
-                + (-1 if action == "prev" else 1 if action == "next" else 0),
+                + (
+                    -1
+                    if action == CallbackAction.PREV
+                    else 1
+                    if action == CallbackAction.NEXT
+                    else 0
+                ),
                 len(products) - 1,
             ),
         )
@@ -168,74 +183,79 @@ async def confirm_delete(callback: CallbackQuery):
         await callback.answer(catalog_service.config.error_text.format(error=str(e)))
 
 
-async def handle_edit(callback: CallbackQuery, bot: Bot, current_index: int):
-    pass
-
-
-@catalog_router.message(Command("addproduct"), IsAdmin())
-async def command_add_product(message: Message, state: FSMContext) -> None:
-    await message.answer("Пожалуйста введите название предмета.")
-    await state.set_state(AddProduct.waiting_for_name)
-
-
-@catalog_router.message(AddProduct.waiting_for_name)
-async def process_product_name(message: Message, state: FSMContext) -> None:
-    name = message.text.strip()
-
-    if not name:
-        await message.answer("Название не должно быть пустым.")
-        return
-
-    await state.update_data(name=name)
-    await message.answer(
-        "Пожайлуста введите описание предмета (или введите 'skip' для пропуска)."
-    )
-    await state.set_state(AddProduct.waiting_for_description)
-
-
-@catalog_router.message(AddProduct.waiting_for_description)
-async def process_product_description(message: Message, state: FSMContext) -> None:
-    description = message.text.strip()
-
-    if description.lower() == "skip":
-        description = None
-
-    await state.update_data(description=description)
-    await message.answer("Пожайлуста введите стоимость предмета (напр., 19.99).")
-    await state.set_state(AddProduct.waiting_for_price)
-
-
-@catalog_router.message(AddProduct.waiting_for_price)
-async def process_product_price(message: Message, state: FSMContext) -> None:
-    price_text = message.text.strip()
+@catalog_router.callback_query(lambda c: c.data.startswith("cancel_delete_"))
+async def cancel_delete(callback: CallbackQuery, bot: Bot) -> None:
     try:
-        price = float(price_text)
-        if price <= 0:
-            raise ValueError("Цена должна быть положительной.")
-    except ValueError:
-        await message.answer("Введите коректную цену (напр., 19.99).")
-        return
+        product_id = int(callback.data.split("_")[2])
+        products = await catalog_service.get_products()
 
-    await state.update_data(price=price)
-    await message.answer(
-        "Пожайлуста оправьте изображение предмета (или введите 'skip' для пропуска)."
-    )
-    await state.set_state(AddProduct.waiting_for_image)
+        if not products:
+            await callback.message.edit_text(catalog_service.config.no_products_text)
+            await callback.answer()
+            return
 
-
-@catalog_router.message(AddProduct.waiting_for_image)
-async def process_product_image(message: Message, state: FSMContext, bot: Bot) -> None:
-    image_bytes = await ImageSelector.get_image_bytes(message, bot)
-
-    product_data: ProductCreate = await StateToModel.from_context(state, ProductCreate)
-    product_data.image = image_bytes.read()
-
-    try:
-        product = await shop_service.add_product(product_data)
-        await message.answer(
-            f"Предмет добавлен в каталог: {product.name} (ID: {product.id}, Price: {product.price}$)"
+        current_index = next(
+            (i for i, p in enumerate(products) if p.id == product_id), None
         )
 
+        if current_index is None:
+            await callback.answer(catalog_service.config.no_products_text)
+            return
+
+        product = products[current_index]
+
+        caption = catalog_service.build_caption(
+            strategy_type=CaptionStrategyType.PRODUCT,
+            args=ProductCaptionArgs(product=product),
+        )
+
+        is_admin = await IsAdmin()(callback)
+        keyboard = get_catalog_keyboard(current_index, len(products), is_admin)
+
+        if image_file := await catalog_service.get_product_image(product.id, product):
+            await bot.edit_message_media(
+                media=InputMediaPhoto(media=image_file, caption=caption),
+                chat_id=callback.message.chat.id,
+                message_id=callback.message.message_id,
+                reply_markup=keyboard,
+            )
+        else:
+            await bot.edit_message_caption(
+                chat_id=callback.message.chat.id,
+                message_id=callback.message.message_id,
+                caption=caption,
+                reply_markup=keyboard,
+            )
+
+        await callback.answer(catalog_service.config.delete_cancel)
+
     except Exception as e:
-        await message.answer(f"Ошибка при добавление предмета: {str(e)}")
-    await state.clear()
+        await callback.message.edit_text(
+            catalog_service.config.error_text.format(error=str(e))
+        )
+        await callback.answer()
+
+
+async def handle_edit(callback: CallbackQuery, current_index: int):
+    try:
+        products = await catalog_service.get_products()
+
+        if not products or current_index >= len(products):
+            await callback.answer(catalog_service.config.no_products_text)
+            return
+
+        product = products[current_index]
+        keyboard = get_edit_keyboard(product.id, current_index)
+
+        await callback.message.edit_caption(
+            caption=f"Редактирование: {html.bold(product.name)}\n",
+            reply_markup=keyboard,
+        )
+
+        await callback.answer()
+
+    except Exception as e:
+        await callback.message.edit_text(
+            catalog_service.config.error_text.format(error=str(e))
+        )
+        await callback.answer()
