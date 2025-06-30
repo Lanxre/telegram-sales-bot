@@ -1,9 +1,10 @@
 from .catalog_service import (
+    CallbackAction,
     CaptionStrategyType,
     CatalogService,
     DeleteCaptionArgs,
+    ErrorCaptionArg,
     ProductCaptionArgs,
-    CallbackAction,
 )
 from .shop_service import ShopService
 
@@ -13,5 +14,6 @@ __all__ = [
     "CaptionStrategyType",
     "DeleteCaptionArgs",
     "ProductCaptionArgs",
-    "CallbackAction"
+    "ErrorCaptionArg",
+    "CallbackAction",
 ]
