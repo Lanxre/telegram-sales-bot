@@ -28,6 +28,7 @@ class CallbackAction(Enum):
     PREV = auto()
     NEXT = auto()
     DELETE = auto()
+    EDIT = auto()
 
 
 class ProductCaptionArgs(TypedDict):
@@ -54,6 +55,14 @@ class ProductDisplayFormatter:
     error_text: str = "Ошибка в обработке предмета: {error}"
     delete_confirm: str = "Вы уверены, что хотите удалить: {name}?"
     delete_success: str = "Предмет был удален из каталога"
+    delete_cancel: str = "Удаление отменено!"
+
+    edit_name_prompt: str = "Пожалуйста, введите новое название предмета (или 'skip' для сохранения текущего)."
+    edit_description_prompt: str = "Пожалуйста, введите новое описание предмета (или 'skip' для сохранения текущего)."
+    edit_price_prompt: str = "Пожалуйста, введите новую стоимость предмета (например, 19.99, или 'skip' для сохранения текущей)."
+    edit_image_prompt: str = "Пожалуйста, отправьте новое изображение предмета (или 'skip' для сохранения текущего)."
+    edit_success: str = "Предмет '{name}' успешно обновлён (ID: {id}, Price: {price}$)"
+    edit_invalid_price: str = "Введите корректную цену (например, 19.99)."
 
 
 class CaptionStrategy(ABC):
