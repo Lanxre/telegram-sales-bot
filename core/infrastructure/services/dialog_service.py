@@ -72,6 +72,24 @@ class DialogService:
                 logger.error(f"Dialog creation failed: {str(e)}")
                 raise ValueError("Failed to create dialog") from e
 
+    async def update_dialog(
+        self, dialog_id: int,  dialog_data: DialogUpdate
+    ) -> Dialog:
+        async with self._get_session() as session:
+            dialog_repo = self.db_manager.get_repo(DialogRepository, session)
+
+            try:
+                dialog = await dialog_repo.update(dialog_id, dialog_data)
+                if dialog:
+                    logger.info(f"Updated dialog ID: {dialog.id}")
+                else:
+                    logger.warning(f"Product not found for update: {dialog_id}")
+                return dialog
+            except SQLAlchemyError as e:
+                await session.rollback()
+                logger.error(f"Dialog update failed: {str(e)}")
+                raise
+
     async def create_message(
         self, message_id: int, dialog_id: int, sender_id: int, content: str
     ) -> Message:
@@ -106,7 +124,7 @@ class DialogService:
                         content=content,
                     )
                 )
-
+                await dialog_repo.update(dialog_id, DialogUpdate(is_read=False))
                 logger.info(f"Created message ID: {message.id} in dialog {dialog_id}")
                 return message
             except IntegrityError as e:

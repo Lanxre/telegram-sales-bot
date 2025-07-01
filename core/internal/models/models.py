@@ -55,8 +55,9 @@ class DialogCreate(BaseModel):
 
 
 class DialogUpdate(BaseModel):
-    user1_id: int
-    user2_id: int
+    user1_id: Optional[int] = None
+    user2_id: Optional[int] = None
+    is_read: Optional[bool] = None
 
 
 class MessageCreate(BaseModel):
