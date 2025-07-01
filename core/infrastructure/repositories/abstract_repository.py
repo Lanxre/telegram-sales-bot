@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import Any, Generic, List, Optional, TypeVar
+from typing import Any, Dict, Generic, List, Optional, TypeVar
 
-from sqlalchemy import delete, select, update
+from sqlalchemy import Select, delete, select, update
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,78 +12,100 @@ UpdateSchemaType = TypeVar("UpdateSchemaType")
 
 class AbstractRepository(ABC, Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     @abstractmethod
-    async def create(
-        self, session: AsyncSession, obj_in: CreateSchemaType
-    ) -> ModelType:
-        pass
+    async def create(self, obj_in: CreateSchemaType) -> ModelType:
+        raise NotImplementedError
 
     @abstractmethod
-    async def get(self, session: AsyncSession, id: Any) -> Optional[ModelType]:
-        pass
+    async def get(self, id: Any) -> Optional[ModelType]:
+        raise NotImplementedError
 
     @abstractmethod
-    async def get_multi(
-        self, session: AsyncSession, skip: int = 0, limit: int = 100
-    ) -> List[ModelType]:
-        pass
+    async def get_multi(self, skip: int = 0, limit: int = 100) -> List[ModelType]:
+        raise NotImplementedError
 
     @abstractmethod
-    async def update(
-        self, session: AsyncSession, id: Any, obj_in: UpdateSchemaType
-    ) -> Optional[ModelType]:
-        pass
+    async def update(self, id: Any, obj_in: UpdateSchemaType) -> Optional[ModelType]:
+        raise NotImplementedError
 
     @abstractmethod
-    async def delete(self, session: AsyncSession, id: Any) -> bool:
-        pass
+    async def delete(self, id: Any) -> bool:
+        raise NotImplementedError
 
 
 class SQLAlchemyRepository(
     AbstractRepository[ModelType, CreateSchemaType, UpdateSchemaType]
 ):
-    def __init__(self, model: type[ModelType]):
-        self.model = model
+    def __init__(self, model: type[ModelType], session: AsyncSession):
+        self._model = model
+        self._session = session
 
-    async def create(
-        self, session: AsyncSession, obj_in: CreateSchemaType
-    ) -> ModelType:
+    @property
+    def model(self) -> type[ModelType]:
+        return self._model
+
+    @property
+    def session(self) -> AsyncSession:
+        return self._session
+
+    def _apply_filters(self, query: Select, filters: Dict[str, Any]) -> Select:
+        for field, value in filters.items():
+            query = query.where(getattr(self.model, field) == value)
+        return query
+
+    async def create(self, obj_in: CreateSchemaType) -> ModelType:
         db_obj = self.model(**obj_in.model_dump(exclude_unset=True))
-        session.add(db_obj)
-        await session.flush()
-        await session.refresh(db_obj)
+        self.session.add(db_obj)
+        await self.session.flush()
+        await self.session.refresh(db_obj)
         return db_obj
 
-    async def get(self, session: AsyncSession, id: Any) -> Optional[ModelType]:
+    async def get(self, id: Any) -> Optional[ModelType]:
         query = select(self.model).where(self.model.id == id)
-        result = await session.execute(query)
+        result = await self.session.execute(query)
         try:
             return result.scalar_one()
         except NoResultFound:
             return None
 
     async def get_multi(
-        self, session: AsyncSession, skip: int = 0, limit: int = 100
+        self,
+        *,
+        skip: int = 0,
+        limit: int = 100,
+        filters: Optional[Dict[str, Any]] = None,
+        order_by: Optional[str] = None,
     ) -> List[ModelType]:
-        query = select(self.model).offset(skip).limit(limit)
-        result = await session.execute(query)
+        query = select(self.model)
+
+        if filters:
+            query = self._apply_filters(query, filters)
+
+        if order_by:
+            query = query.order_by(order_by)
+
+        query = query.offset(skip).limit(limit)
+
+        result = await self.session.execute(query)
         return result.scalars().all()
 
-    async def update(
-        self, session: AsyncSession, id: Any, obj_in: UpdateSchemaType
-    ) -> Optional[ModelType]:
+    async def update(self, id: Any, obj_in: UpdateSchemaType) -> Optional[ModelType]:
         query = (
             update(self.model)
             .where(self.model.id == id)
-            .values(obj_in.model_dump(exclude_unset=True))
+            .values(**obj_in.model_dump(exclude_unset=True))
+            .returning(self.model)
         )
-        result = await session.execute(query)
-        if result.rowcount == 0:
-            return None
-        await session.commit()
-        return await self.get(session, id)
 
-    async def delete(self, session: AsyncSession, id: Any) -> bool:
+        result = await self.session.execute(query)
+        await self.session.commit()
+
+        try:
+            return result.scalar_one()
+        except NoResultFound:
+            return None
+
+    async def delete(self, id: Any) -> bool:
         query = delete(self.model).where(self.model.id == id)
-        result = await session.execute(query)
-        await session.commit()
+        result = await self.session.execute(query)
+        await self.session.commit()
         return result.rowcount > 0

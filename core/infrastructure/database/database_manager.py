@@ -1,4 +1,5 @@
-from typing import AsyncGenerator, Dict, Type
+from contextlib import asynccontextmanager
+from typing import AsyncGenerator, Dict, Optional, Type, TypeVar
 
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import (
@@ -13,85 +14,129 @@ from logger import LoggerBuilder
 
 logger = LoggerBuilder("DatabaseManager").add_stream_handler().build()
 
+T = TypeVar("T")
+
 
 class DatabaseManager:
     def __init__(
         self,
         config: DatabaseSettings,
+        *,
         echo: bool = False,
-        repositories: list[Type] = None,
+        pool_size: int = 5,
+        max_overflow: int = 10,
+        pool_recycle: int = 3600,
+        pool_timeout: int = 30,
+        repositories: Optional[list[Type]] = None,
     ):
-        self.engine = self.create_engine(config, echo=echo)
-        self.session_pool = self.create_session_pool()
+        """
+        Initialize database manager with connection settings.
+
+        Args:
+            config: Database configuration settings
+            echo: Enable SQL query logging
+            pool_size: Number of connections to keep in pool
+            max_overflow: Maximum number of connections beyond pool_size
+            pool_recycle: Recycle connections after this many seconds
+            pool_timeout: Timeout for getting a connection from pool
+            repositories: List of repository classes to register
+        """
+        self.engine = self._create_engine(
+            config,
+            echo=echo,
+            pool_size=pool_size,
+            max_overflow=max_overflow,
+            pool_recycle=pool_recycle,
+            pool_timeout=pool_timeout,
+        )
+        self.session_pool = self._create_session_pool()
         self._repository_registry: Dict[str, Type] = {}
+
         if repositories:
             for repo_class in repositories:
                 self.register_repository(repo_class)
 
     @staticmethod
-    def create_engine(config: DatabaseSettings, echo: bool = False) -> AsyncEngine:
+    def _create_engine(
+        config: DatabaseSettings,
+        *,
+        echo: bool = False,
+        **engine_kwargs,
+    ) -> AsyncEngine:
+        """Create async database engine with appropriate configuration."""
         try:
             if config.driver == "aiosqlite":
-                # SQLite configuration
                 database_url = config.sqlite_url
-                engine = create_async_engine(
-                    database_url,
-                    echo=echo,
-                    connect_args={"check_same_thread": False},  # Required for SQLite
-                )
+                connect_args = {"check_same_thread": False}
+                engine_kwargs.setdefault("connect_args", connect_args)
             else:
-                # PostgreSQL configuration
                 database_url = config.postgresql_url
-                engine = create_async_engine(
-                    database_url,
-                    echo=echo,
-                )
-            return engine
+                # PostgreSQL-specific optimizations
+                engine_kwargs.setdefault("pool_pre_ping", True)
+                engine_kwargs.setdefault("isolation_level", "AUTOCOMMIT")
+
+            return create_async_engine(
+                database_url,
+                echo=echo,
+                **engine_kwargs,
+            )
         except Exception as e:
-            logger.error(f"Connection error: {str(e)}")
+            logger.error(f"Engine creation error: {str(e)}")
             raise
 
-    def create_session_pool(self) -> async_sessionmaker[AsyncSession]:
-        session_pool = async_sessionmaker(
+    def _create_session_pool(self) -> async_sessionmaker[AsyncSession]:
+        """Create async session factory with configured settings."""
+        return async_sessionmaker(
             bind=self.engine,
             class_=AsyncSession,
             expire_on_commit=False,
-            autoflush=False,  # Added for better SQLite compatibility
+            autoflush=False,
         )
-        return session_pool
 
+    @asynccontextmanager
     async def get_db_session(self) -> AsyncGenerator[AsyncSession, None]:
-        """Provide an AsyncSession for database operations."""
+        """Provide a transactional database session context manager."""
         async with self.session_pool() as session:
             try:
                 yield session
                 await session.commit()
             except SQLAlchemyError as e:
-                logger.error(f"Session error: {str(e)}")
+                logger.error(f"Database error: {str(e)}")
                 await session.rollback()
                 raise
             except Exception as e:
-                logger.error(f"Session error: {str(e)}")
+                logger.error(f"Unexpected error: {str(e)}")
                 await session.rollback()
                 raise
+            finally:
+                await session.close()
 
-    def register_repository(self, repository_class: Type) -> None:
+    def register_repository(self, repository_class: Type[T]) -> None:
         """Register a repository class for dynamic instantiation."""
         if not hasattr(repository_class, "__name__"):
             raise ValueError("Repository class must have a __name__ attribute")
+
+        if repository_class.__name__ in self._repository_registry:
+            logger.warning(f"Repository {repository_class.__name__} already registered")
+
         self._repository_registry[repository_class.__name__] = repository_class
 
-    def get_repository(self, repository_class: Type, session: AsyncSession):
+    def get_repository(self, repository_class: Type[T], session: AsyncSession) -> T:
         """Get an instance of the specified repository class with the given session."""
-        repo_class = self._repository_registry.get(repository_class.__name__)
-        if not repo_class:
-            raise ValueError(f"Repository {repository_class.__name__} not registered")
-        return repo_class(session)
+        repo_name = repository_class.__name__
+        if repo_name not in self._repository_registry:
+            raise ValueError(f"Repository {repo_name} not registered")
 
-    def get_repo(self, repository_class: Type, session: AsyncSession):
-        """Return a repository instance for the given class and session."""
+        return self._repository_registry[repo_name](session)
+
+    def get_repo(self, repository_class: Type[T], session: AsyncSession) -> T:
+        """Alias for get_repository."""
         return self.get_repository(repository_class, session)
 
     def get_registered_repositories(self) -> list[str]:
-        """Return a list of registered repository names."""
+        """Get names of all registered repositories."""
         return list(self._repository_registry.keys())
+
+    async def dispose(self) -> None:
+        """Close all connections in the connection pool."""
+        await self.engine.dispose()
