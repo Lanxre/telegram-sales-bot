@@ -6,6 +6,7 @@ from .catalog_service import (
     ErrorCaptionArg,
     ProductCaptionArgs,
 )
+from .dialog_service import DialogService
 from .shop_service import ShopService
 
 __all__ = [
@@ -16,4 +17,5 @@ __all__ = [
     "ProductCaptionArgs",
     "ErrorCaptionArg",
     "CallbackAction",
+    "DialogService",
 ]

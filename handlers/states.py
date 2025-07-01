@@ -17,3 +17,7 @@ class EditProduct(StatesGroup):
     waiting_for_description = State()
     waiting_for_price = State()
     waiting_for_image = State()
+
+
+class DialogStates(StatesGroup):
+    waiting_for_message = State()

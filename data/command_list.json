@@ -14,5 +14,9 @@
     {
         "name": "/addproduct",
         "description": "Only for admins. Can add product to catalog"
+    },
+    {
+        "name": "/startdialog",
+        "description": "If have questions you can ask him for admin"
     }
 ]

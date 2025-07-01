@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Generic, List, Optional, TypeVar
 
-from sqlalchemy import Select, delete, select, update
+from sqlalchemy import Select, delete, select, update, text
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -81,7 +81,7 @@ class SQLAlchemyRepository(
             query = self._apply_filters(query, filters)
 
         if order_by:
-            query = query.order_by(order_by)
+            query = query.order_by(text(order_by))
 
         query = query.offset(skip).limit(limit)
 
