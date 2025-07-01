@@ -32,3 +32,4 @@ async def main() -> None:
 if __name__ == "__main__":
     logger.info("Bot start")
     asyncio.run(main())
+    logger.info("Bot stoped")
