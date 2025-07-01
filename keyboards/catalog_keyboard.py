@@ -71,6 +71,6 @@ def get_edit_keyboard(product_id: int, current_index: int) -> InlineKeyboardMark
     builder.button(text="📝 Описание", callback_data=f"edit_desc_{product_id}")
     builder.button(text="💵 Цена", callback_data=f"edit_price_{product_id}")
     builder.button(text="🖼️ Изображение", callback_data=f"edit_image_{product_id}")
-    builder.button(text="⬅️ Назад", callback_data=f"catalog_prev_{current_index}")
+    builder.button(text="⬅️ Назад", callback_data=f"catalog_prev_{current_index + 1}")
     builder.adjust(2, 2, 1)
     return builder.as_markup()
