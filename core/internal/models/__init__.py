@@ -1,4 +1,8 @@
 from .models import (
+    DialogCreate,
+    DialogUpdate,
+    MessageCreate,
+    MessageUpdate,
     OrderCreate,
     OrderUpdate,
     ProductCreate,
@@ -16,4 +20,8 @@ __all__ = [
     "ProductUpdate",
     "UserCreate",
     "UserUpdate",
+    "DialogCreate",
+    "DialogUpdate",
+    "MessageCreate",
+    "MessageUpdate",
 ]

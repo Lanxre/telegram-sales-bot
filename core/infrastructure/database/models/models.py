@@ -23,8 +23,14 @@ class Product(BaseModel):
     description: Mapped[Optional[str]] = mapped_column(String)
     price: Mapped[float] = mapped_column(Float, nullable=False)
     image: Mapped[Optional[bytes]] = mapped_column(LargeBinary)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now(timezone.utc))
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.now(timezone.utc)
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.now(timezone.utc),
+        onupdate=datetime.now(timezone.utc),
+    )
 
     # Primary many-to-many relationship to orders
     orders: Mapped[List["Order"]] = relationship(
@@ -37,11 +43,16 @@ class Product(BaseModel):
         viewonly=True,  # Make read-only to avoid foreign key conflicts
     )
 
+
 class ProductOrder(BaseModel):
     __tablename__ = "Product_Order"
 
-    product_id: Mapped[int] = mapped_column(Integer, ForeignKey("Product.id"), primary_key=True)
-    order_id: Mapped[int] = mapped_column(Integer, ForeignKey("Order.id"), primary_key=True)
+    product_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("Product.id"), primary_key=True
+    )
+    order_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("Order.id"), primary_key=True
+    )
 
     # Relationships
     product: Mapped["Product"] = relationship(
@@ -53,6 +64,7 @@ class ProductOrder(BaseModel):
         viewonly=True,  # Make read-only to avoid foreign key conflicts
     )
 
+
 class Order(BaseModel):
     __tablename__ = "Order"
 
@@ -61,8 +73,14 @@ class Order(BaseModel):
     total_count: Mapped[int] = mapped_column(Integer, nullable=False)
     order_note: Mapped[Optional[str]] = mapped_column(Text)
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.telegram_id"))
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now(timezone.utc))
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.now(timezone.utc)
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.now(timezone.utc),
+        onupdate=datetime.now(timezone.utc),
+    )
 
     # Many-to-one relationship to user
     user: Mapped["User"] = relationship(back_populates="orders")
@@ -77,14 +95,79 @@ class Order(BaseModel):
         viewonly=True,  # Make read-only to avoid foreign key conflicts
     )
 
+
+class Dialog(BaseModel):
+    __tablename__ = "dialogs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user1_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.telegram_id"), nullable=False
+    )
+    user2_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.telegram_id"), nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.now(timezone.utc)
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.now(timezone.utc),
+        onupdate=datetime.now(timezone.utc),
+    )
+
+    # Relationships
+    user1: Mapped["User"] = relationship(
+        foreign_keys=[user1_id], back_populates="dialogs_as_user1"
+    )
+    user2: Mapped["User"] = relationship(
+        foreign_keys=[user2_id], back_populates="dialogs_as_user2"
+    )
+    messages: Mapped[List["Message"]] = relationship(back_populates="dialog")
+
+    def __repr__(self):
+        return f"<Dialog(id={self.id}, user1_id={self.user1_id}, user2_id={self.user2_id})>"
+
+
+class Message(BaseModel):
+    __tablename__ = "messages"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    dialog_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("dialogs.id"), nullable=False
+    )
+    sender_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.telegram_id"), nullable=False
+    )
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.now(timezone.utc)
+    )
+
+    # Relationships
+    dialog: Mapped["Dialog"] = relationship(back_populates="messages")
+    sender: Mapped["User"] = relationship(back_populates="messages")
+
+    def __repr__(self):
+        return f"<Message(id={self.id}, dialog_id={self.dialog_id}, sender_id={self.sender_id}, content='{self.content[:20]}...')>"
+
+
 class User(BaseModel):
     __tablename__ = "users"
 
     telegram_id: Mapped[int] = mapped_column(Integer, primary_key=True)
     username: Mapped[Optional[str]] = mapped_column(String)
     full_name: Mapped[Optional[str]] = mapped_column(String)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now(timezone.utc))
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.now(timezone.utc)
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.now(timezone.utc),
+        onupdate=datetime.now(timezone.utc),
+    )
 
     # One-to-many relationship to orders
     orders: Mapped[List["Order"]] = relationship(back_populates="user")
+    dialogs_as_user1: Mapped[List["Dialog"]] = relationship(foreign_keys="Dialog.user1_id", back_populates="user1")
+    dialogs_as_user2: Mapped[List["Dialog"]] = relationship(foreign_keys="Dialog.user2_id", back_populates="user2")
+    messages: Mapped[List["Message"]] = relationship(back_populates="sender")
