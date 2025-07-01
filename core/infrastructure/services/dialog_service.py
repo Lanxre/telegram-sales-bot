@@ -1,5 +1,4 @@
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
 from typing import AsyncIterator, List
 
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
@@ -9,6 +8,9 @@ from core.infrastructure.database import DatabaseManager
 from core.infrastructure.database.models import Dialog, Message
 from core.infrastructure.repositories import DialogRepository, MessageRepository
 from core.internal.models import DialogCreate, DialogUpdate, MessageCreate
+
+from filters import IsAdmin
+
 from logger import LoggerBuilder
 
 logger = LoggerBuilder("Dialog - Service").add_stream_handler().build()
@@ -176,3 +178,6 @@ class DialogService:
 
             logger.info(f"Retrieved {len(dialogs)} dialogs for user {user_id}")
             return dialogs
+    
+    async def get_admin_id_for_dialog() -> int:
+        return IsAdmin.admin_ids[0]

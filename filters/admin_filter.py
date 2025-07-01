@@ -1,3 +1,4 @@
+from typing import List
 from aiogram.filters import BaseFilter
 from aiogram.types import Message
 
@@ -26,3 +27,7 @@ with open("admin_ids.txt", "r", encoding="utf-8") as f:
 class IsAdmin(BaseFilter):
     async def __call__(self, message: Message) -> bool:
         return message.from_user.id in ADMIN_IDS
+    
+    @property.getter
+    def admin_ids() -> List[int]:        
+        return ADMIN_IDS
