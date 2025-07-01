@@ -1,16 +1,17 @@
-from typing import List, Optional
-from sqlalchemy import (
-    Integer,
-    String,
-    Float,
-    LargeBinary,
-    Text,
-    DateTime,
-    ForeignKey,
-)
-from sqlalchemy.orm import relationship, Mapped, mapped_column
 from datetime import datetime, timezone
+from typing import List, Optional
 
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    LargeBinary,
+    String,
+    Text,
+)
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import BaseModel
 
@@ -106,6 +107,7 @@ class Dialog(BaseModel):
     user2_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("users.telegram_id"), nullable=False
     )
+    is_read: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.now(timezone.utc)
     )
@@ -168,6 +170,10 @@ class User(BaseModel):
 
     # One-to-many relationship to orders
     orders: Mapped[List["Order"]] = relationship(back_populates="user")
-    dialogs_as_user1: Mapped[List["Dialog"]] = relationship(foreign_keys="Dialog.user1_id", back_populates="user1")
-    dialogs_as_user2: Mapped[List["Dialog"]] = relationship(foreign_keys="Dialog.user2_id", back_populates="user2")
+    dialogs_as_user1: Mapped[List["Dialog"]] = relationship(
+        foreign_keys="Dialog.user1_id", back_populates="user1"
+    )
+    dialogs_as_user2: Mapped[List["Dialog"]] = relationship(
+        foreign_keys="Dialog.user2_id", back_populates="user2"
+    )
     messages: Mapped[List["Message"]] = relationship(back_populates="sender")

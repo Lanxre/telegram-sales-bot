@@ -8,9 +8,7 @@ from core.infrastructure.database import DatabaseManager
 from core.infrastructure.database.models import Dialog, Message
 from core.infrastructure.repositories import DialogRepository, MessageRepository
 from core.internal.models import DialogCreate, DialogUpdate, MessageCreate
-
-from filters import IsAdmin
-
+from filters import get_admins_ids
 from logger import LoggerBuilder
 
 logger = LoggerBuilder("Dialog - Service").add_stream_handler().build()
@@ -179,5 +177,5 @@ class DialogService:
             logger.info(f"Retrieved {len(dialogs)} dialogs for user {user_id}")
             return dialogs
     
-    async def get_admin_id_for_dialog() -> int:
-        return IsAdmin.admin_ids[0]
+    async def get_admin_id_for_dialog(self) -> int:
+        return get_admins_ids()[0]

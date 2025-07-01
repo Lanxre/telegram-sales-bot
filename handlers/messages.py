@@ -17,10 +17,11 @@ dialog_service = DialogService(db_manager)
 async def start_dialog_command(message: Message, state: FSMContext) -> None:
     """Начало нового диалога с администратором"""
     try:
+        admin_id = await dialog_service.get_admin_id_for_dialog()
         dialog = await dialog_service.create_dialog(
             dialog_id=message.chat.id,
             user1_id=message.from_user.id,
-            user2_id=dialog_service.get_admin_id_for_dialog()
+            user2_id=admin_id
         )
         
         await state.update_data(dialog_id=dialog.id)
