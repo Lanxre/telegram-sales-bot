@@ -4,41 +4,31 @@ from aiogram.types import Message, ReplyKeyboardRemove
 
 from core.infrastructure import db_manager
 from core.infrastructure.services import DialogService
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+
 from aiogram.fsm.context import FSMContext
 from .states import DialogStates
+from keyboards import get_dialog_keyboard
 
 message_router = Router()
 dialog_service = DialogService(db_manager)
 
-dialog_keyboard = ReplyKeyboardMarkup(
-    keyboard=[
-        [KeyboardButton(text="📝 Завершить диалог")],
-        [KeyboardButton(text="📋 Показать историю")]
-    ],
-    resize_keyboard=True
-)
 
 @message_router.message(Command("startdialog"))
 async def start_dialog_command(message: Message, state: FSMContext) -> None:
     """Начало нового диалога с администратором"""
-    admin_id = 123456789  # ID администратора (заменить на реальный)
-    
     try:
-        # Создаем новый диалог между пользователем и админом
         dialog = await dialog_service.create_dialog(
             dialog_id=message.chat.id,
             user1_id=message.from_user.id,
             user2_id=admin_id
         )
         
-        # Сохраняем ID диалога в состоянии
         await state.update_data(dialog_id=dialog.id)
         await state.set_state(DialogStates.waiting_for_message)
         
         await message.answer(
             "💬 Вы начали диалог с поддержкой. Напишите ваше сообщение:",
-            reply_markup=dialog_keyboard
+            reply_markup=get_dialog_keyboard()
         )
     except Exception:
         await message.answer("❌ Не удалось создать диалог. Попробуйте позже.")
@@ -86,7 +76,7 @@ async def show_history_handler(message: Message, state: FSMContext) -> None:
         
         await message.answer(
             f"📜 История сообщений:\n\n{history}",
-            reply_markup=dialog_keyboard
+            reply_markup=get_dialog_keyboard()
         )
     except Exception:
         await message.answer("❌ Не удалось загрузить историю сообщений")
@@ -110,12 +100,11 @@ async def process_user_message(message: Message, state: FSMContext) -> None:
             content=message.text
         )
         
-        await message.answer(
-            "✅ Сообщение отправлено! Ожидайте ответа.",
-            reply_markup=dialog_keyboard
+        await message.answer( 
+            "✅ Сообщение отправлено! Ожидайте ответа.\n" + \
+            "Если есть, что дополнить ✍️ введите текст сообщения:",
+            reply_markup=get_dialog_keyboard()
         )
-        
-        await message.answer("Если есть, что дополнить ✍️ введите текст сообщения:")
         
         await state.set_state(DialogStates.waiting_for_message)
     except Exception:
