@@ -1,3 +1,3 @@
-from .admin_filter import IsAdmin, get_admins_ids
+from .admin_filter import IsAdmin
 
-__all__ = ["IsAdmin", "get_admins_ids"]
+__all__ = ["IsAdmin"]
