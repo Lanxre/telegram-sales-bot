@@ -36,3 +36,16 @@ def get_apeals_keyboard(dialogs: List[Dialog]) -> InlineKeyboardMarkup:
         keyboard.inline_keyboard.append(buttons[i : i + 5])
 
     return keyboard
+
+
+def get_message_keyboard(dialog: Dialog) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="Нажмите, что бы ответить на обращение",
+                    callback_data=f"answer_apeals_{dialog.id}",
+                )
+            ]
+        ]
+    )

@@ -1,7 +1,9 @@
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from sqlalchemy import func, select
+from sqlalchemy.orm import joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
+
 
 from core.internal.models import DialogCreate, DialogUpdate
 
@@ -12,6 +14,13 @@ from .abstract_repository import SQLAlchemyRepository
 class DialogRepository(SQLAlchemyRepository[Dialog, DialogCreate, DialogUpdate]):
     def __init__(self, session: AsyncSession):
         super().__init__(model=Dialog, session=session)
+
+    async def get(self, id: Any) -> Optional[Dialog]:
+        query = select(self.model).where(self.model.id == id).options(joinedload(self.model.messages), joinedload(self.model.user1))
+        result = await self.session.execute(query)
+        return result.scalars().unique().one()
+
+        
 
     async def find_dialog_between_users(
         self, user1_id: int, user2_id: int

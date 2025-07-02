@@ -21,3 +21,4 @@ class EditProduct(StatesGroup):
 
 class DialogStates(StatesGroup):
     waiting_for_message = State()
+    waiting_for_answer_apeals = State()

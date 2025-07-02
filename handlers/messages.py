@@ -1,15 +1,17 @@
-from aiogram import Router, F
+from aiogram import Bot, F, Router
 from aiogram.filters import Command
-from aiogram.types import Message, ReplyKeyboardRemove
+from aiogram.fsm.context import FSMContext
+from aiogram.types import CallbackQuery, Message, ReplyKeyboardRemove
 
 from core.infrastructure.services import DialogService
-
-from aiogram.fsm.context import FSMContext
-from .states import DialogStates
-from keyboards import get_dialog_keyboard, get_apeals_keyboard
-
+from core.internal.models import DialogUpdate
 from filters import IsAdmin
+from keyboards import get_apeals_keyboard, get_dialog_keyboard, get_message_keyboard
+from logger import LoggerBuilder
 
+from .states import DialogStates
+
+logger = LoggerBuilder("MessageRouter").add_stream_handler().build()
 message_router = Router()
 
 
@@ -121,8 +123,9 @@ async def process_user_message(
     except Exception:
         await message.answer("❌ Не удалось отправить сообщение. Попробуйте еще раз.")
 
+
 @message_router.message(Command("showapeals"), IsAdmin())
-async def show_appeals(message: Message, state: FSMContext, dialog_service: DialogService):
+async def show_appeals(message: Message, dialog_service: DialogService):
     try:
         not_read_dialogs = await dialog_service.not_read_dialogs(message.from_user.id)
         keyboard = get_apeals_keyboard(not_read_dialogs)
@@ -130,3 +133,62 @@ async def show_appeals(message: Message, state: FSMContext, dialog_service: Dial
 
     except Exception:
         await message.answer("❌ Не удалось загрузить сообщения.")
+
+
+@message_router.callback_query(lambda c: c.data.startswith("dialog_apeals_"))
+async def show_select_apeals(callback: CallbackQuery, dialog_service: DialogService):
+    try:
+        dialog_id = int(callback.data.split("_")[2])
+        dialog = await dialog_service.get_dialog(dialog_id)
+        keyboard = get_message_keyboard(dialog)
+        await callback.message.answer(
+            f"{dialog.user1.username}: {'\n'.join(map(lambda x: x.content, dialog.messages))}",
+            reply_markup=keyboard,
+        )
+        await callback.answer()
+
+    except Exception as e:
+        logger.error(f"Error: {str(e)}")
+        await callback.message.answer("❌ Не удалось загрузить обращение.")
+
+
+@message_router.callback_query(lambda c: c.data.startswith("answer_apeals_"))
+async def answer_apeals_tag(callback: CallbackQuery, state: FSMContext):
+    dialog_id = int(callback.data.split("_")[2])
+    await callback.message.answer("Ожидается ответ пользователю")
+    await state.set_data(data={"dialog_id": dialog_id})
+    await state.set_state(DialogStates.waiting_for_answer_apeals)
+    await callback.answer()
+
+
+@message_router.message(DialogStates.waiting_for_answer_apeals)
+async def answer_apeals(
+    message: Message, state: FSMContext, dialog_service: DialogService, bot: Bot
+):
+    try:
+        data = await state.get_data()
+        dialog_id = data.get("dialog_id")
+        answer = message.text.strip()
+
+        await dialog_service.create_message(
+            message_id=message.message_id,
+            dialog_id=dialog_id,
+            sender_id=message.from_user.id,
+            content=answer,
+        )
+
+        await dialog_service.update_dialog(dialog_id, DialogUpdate(is_read=True))
+
+        await message.answer("✅ Ответ отправлен!")
+
+        await bot.send_message(
+            chat_id=dialog_id,
+            text="Вы получили ответ на ваше обращение. Для деталей /startdialog '📋 Показать историю'\n"
+            + f"{answer if len(answer) < 20 else f'{answer[:20]}...'}",
+        )
+
+    except Exception as e:
+        logger.error(f"Error: {str(e)}")
+        await message.answer("❌ Не удалось отправить ответ.")
+
+    await state.clear()

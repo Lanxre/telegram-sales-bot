@@ -219,3 +219,8 @@ class DialogService:
         async with self.db_manager.get_db_session() as session:
             dialog_repo = self.db_manager.get_repo(DialogRepository, session)
             return await dialog_repo.get_unread_dialogs(admin_id, limit, offset)
+    
+    async def get_dialog(self, dialog_id: int) -> Dialog:
+        async with self._get_session() as session:
+            dialog_repo = self.db_manager.get_repo(DialogRepository, session)
+            return await dialog_repo.get(dialog_id)

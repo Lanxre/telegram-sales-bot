@@ -1,52 +1,20 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from enum import Enum, auto
-from typing import Dict, List, TypedDict
+from typing import Dict, List
 
 from aiogram import html
 from aiogram.types import BufferedInputFile
 
 from core.infrastructure.database.models import Product
+from core.internal.enums import CaptionStrategyType
 from core.internal.models import ProductUpdate
+from core.internal.types import DeleteCaptionArgs, ErrorCaptionArg, ProductCaptionArgs
 from logger import LoggerBuilder
 from utils import ImageSelector
 
 from .shop_service import ShopService
 
 logger = LoggerBuilder("Catalog - Service").add_stream_handler().build()
-
-
-class CaptionStrategyType(Enum):
-    """Enum for caption strategy types"""
-
-    PRODUCT = auto()
-    DELETE = auto()
-    EDIT = auto()
-
-
-class CallbackAction(Enum):
-    """Enum for callback actions"""
-
-    PREV = auto()
-    NEXT = auto()
-    DELETE = auto()
-    EDIT = auto()
-
-
-class ProductCaptionArgs(TypedDict):
-    """Type definition for product caption kwargs"""
-
-    product: Product
-
-
-class DeleteCaptionArgs(TypedDict):
-    """Type definition for delete caption kwargs"""
-
-    product_name: str
-
-
-class ErrorCaptionArg(TypedDict):
-    error: Exception
 
 
 @dataclass(frozen=True)
@@ -117,7 +85,7 @@ class DeleteCaptionStrategy(CaptionStrategy):
         if not product_name:
             raise ValueError("Product name is required for delete caption")
         return self.config.delete_confirm.format(name=html.bold(product_name))
-    
+
     def build_error(self, args):
         return super().build_error(args)
 
@@ -166,9 +134,13 @@ class CatalogService:
     async def delete_product(self, product_id: int) -> bool:
         is_delete = await self.shop_service.delete_product(product_id)
         return is_delete
-    
-    async def update_product(self, product_id: int, product_data: ProductUpdate) -> Product:
-        updated_product = await self.shop_service.update_product(product_id, product_data)
+
+    async def update_product(
+        self, product_id: int, product_data: ProductUpdate
+    ) -> Product:
+        updated_product = await self.shop_service.update_product(
+            product_id, product_data
+        )
         return updated_product
 
     async def get_product_image(

@@ -1,6 +1,5 @@
 from .admin_service import AdminService
 from .catalog_service import (
-    CallbackAction,
     CaptionStrategyType,
     CatalogService,
     DeleteCaptionArgs,

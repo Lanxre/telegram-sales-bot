@@ -3,12 +3,12 @@ from aiogram.filters import Command
 from aiogram.types import CallbackQuery, InputMediaPhoto, Message
 
 from core.infrastructure.services import (
-    CallbackAction,
     CaptionStrategyType,
     CatalogService,
     DeleteCaptionArgs,
     ProductCaptionArgs,
 )
+from core.internal.enums import CallbackAction
 from keyboards import (
     get_catalog_keyboard,
     get_confirm_delete_keyboard,
