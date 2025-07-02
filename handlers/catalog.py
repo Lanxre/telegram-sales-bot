@@ -1,33 +1,27 @@
 from aiogram import Bot, Router, html
 from aiogram.filters import Command
-
 from aiogram.types import CallbackQuery, InputMediaPhoto, Message
 
-from core.infrastructure import db_manager
 from core.infrastructure.services import (
     CallbackAction,
     CaptionStrategyType,
     CatalogService,
     DeleteCaptionArgs,
     ProductCaptionArgs,
-    ShopService,
 )
-
-from filters import IsAdmin
 from keyboards import (
     get_catalog_keyboard,
     get_confirm_delete_keyboard,
     get_edit_keyboard,
 )
 
-
 catalog_router = Router()
-shop_service = ShopService(db_manager)
-catalog_service = CatalogService(shop_service)
 
 
 @catalog_router.message(Command("catalog"))
-async def command_catalog(message: Message) -> None:
+async def command_catalog(
+    message: Message, catalog_service: CatalogService, is_admin: bool
+) -> None:
     try:
         products = await catalog_service.get_products()
 
@@ -40,7 +34,6 @@ async def command_catalog(message: Message) -> None:
             strategy_type=CaptionStrategyType.PRODUCT,
             args=ProductCaptionArgs(product=product),
         )
-        is_admin = await IsAdmin()(message)
 
         if image_file := await catalog_service.get_product_image(product.id, product):
             await message.answer_photo(
@@ -59,7 +52,9 @@ async def command_catalog(message: Message) -> None:
 
 
 @catalog_router.callback_query(lambda c: c.data.startswith("catalog_"))
-async def process_catalog_navigation(callback: CallbackQuery, bot: Bot) -> None:
+async def process_catalog_navigation(
+    callback: CallbackQuery, bot: Bot, catalog_service: CatalogService, is_admin: bool
+) -> None:
     parts = callback.data.split("_")
 
     if len(parts) != 3:
@@ -72,15 +67,22 @@ async def process_catalog_navigation(callback: CallbackQuery, bot: Bot) -> None:
         raise ValueError(f"Unknown callback action: {parts[1]}")
 
     if action == CallbackAction.PREV or action == CallbackAction.NEXT:
-        await handle_navigation(callback, bot, action, current_index)
+        await handle_navigation(
+            callback, bot, action, current_index, catalog_service, is_admin
+        )
     elif action == CallbackAction.DELETE:
-        await handle_delete(callback, current_index)
+        await handle_delete(callback, current_index, catalog_service)
     elif action == CallbackAction.EDIT:
-        await handle_edit(callback, current_index)
+        await handle_edit(callback, current_index, catalog_service)
 
 
 async def handle_navigation(
-    callback: CallbackQuery, bot: Bot, action: str, current_index: int
+    callback: CallbackQuery,
+    bot: Bot,
+    action: str,
+    current_index: int,
+    catalog_service: CatalogService,
+    is_admin: bool,
 ) -> None:
     try:
         products = await catalog_service.get_products()
@@ -111,7 +113,7 @@ async def handle_navigation(
             strategy_type=CaptionStrategyType.PRODUCT,
             args=ProductCaptionArgs(product=product),
         )
-        is_admin = await IsAdmin()(callback)
+
         keyboard = get_catalog_keyboard(new_index, len(products), is_admin)
 
         if image_file := await catalog_service.get_product_image(product.id, product):
@@ -138,7 +140,9 @@ async def handle_navigation(
         await callback.answer()
 
 
-async def handle_delete(callback: CallbackQuery, current_index: int):
+async def handle_delete(
+    callback: CallbackQuery, current_index: int, catalog_service: CatalogService
+):
     try:
         products = await catalog_service.get_products()
 
@@ -166,7 +170,9 @@ async def handle_delete(callback: CallbackQuery, current_index: int):
         await callback.answer()
 
 
-async def handle_edit(callback: CallbackQuery, current_index: int):
+async def handle_edit(
+    callback: CallbackQuery, current_index: int, catalog_service: CatalogService
+):
     try:
         products = await catalog_service.get_products()
 

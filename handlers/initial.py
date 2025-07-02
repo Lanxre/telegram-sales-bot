@@ -2,17 +2,15 @@ from aiogram import Router, html
 from aiogram.filters import Command, CommandStart
 from aiogram.types import Message, ReplyKeyboardRemove
 
-from core.infrastructure import db_manager
 from core.infrastructure.services import ShopService
 from core.internal.models import UserCreate
 from data import CommandList
 
 initial_router = Router()
-shop_service = ShopService(db_manager)
 
 
 @initial_router.message(CommandStart())
-async def command_start(message: Message) -> None:
+async def command_start(message: Message, shop_service: ShopService) -> None:
     try:
         await shop_service.create_user(
             UserCreate(

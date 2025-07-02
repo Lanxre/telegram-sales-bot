@@ -1,12 +1,10 @@
 from aiogram import Bot, Router, html
 from aiogram.types import CallbackQuery, InputMediaPhoto
 
-from core.infrastructure import db_manager
 from core.infrastructure.services import (
     CaptionStrategyType,
-    CatalogService,
     ProductCaptionArgs,
-    ShopService,
+    CatalogService,
 )
 from filters import IsAdmin
 from keyboards import (
@@ -14,12 +12,10 @@ from keyboards import (
 )
 
 product_delete_router = Router()
-shop_service = ShopService(db_manager)
-catalog_service = CatalogService(shop_service)
 
 
 @product_delete_router.callback_query(lambda c: c.data.startswith("confirm_delete_"))
-async def confirm_delete(callback: CallbackQuery):
+async def confirm_delete(callback: CallbackQuery, catalog_service: CatalogService):
     product_id = int(callback.data.split("_")[2])
     try:
         is_delete = await catalog_service.delete_product(product_id)
@@ -34,7 +30,9 @@ async def confirm_delete(callback: CallbackQuery):
 
 
 @product_delete_router.callback_query(lambda c: c.data.startswith("cancel_delete_"))
-async def cancel_delete(callback: CallbackQuery, bot: Bot) -> None:
+async def cancel_delete(
+    callback: CallbackQuery, bot: Bot, catalog_service: CatalogService
+) -> None:
     try:
         product_id = int(callback.data.split("_")[2])
         products = await catalog_service.get_products()

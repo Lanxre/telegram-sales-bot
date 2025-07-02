@@ -3,11 +3,7 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
-from core.infrastructure import db_manager
-from core.infrastructure.services import (
-    CatalogService,
-    ShopService,
-)
+from core.infrastructure.services import ShopService
 from core.internal.models import ProductCreate
 from filters import IsAdmin
 from utils import ImageSelector, StateToModel
@@ -15,8 +11,6 @@ from utils import ImageSelector, StateToModel
 from .states import AddProduct
 
 product_add_router = Router()
-shop_service = ShopService(db_manager)
-catalog_service = CatalogService(shop_service)
 
 
 @product_add_router.message(Command("addproduct"), IsAdmin())
@@ -71,7 +65,9 @@ async def process_product_price(message: Message, state: FSMContext) -> None:
 
 
 @product_add_router.message(AddProduct.waiting_for_image)
-async def process_product_image(message: Message, state: FSMContext, bot: Bot) -> None:
+async def process_product_image(
+    message: Message, state: FSMContext, bot: Bot, shop_service: ShopService
+) -> None:
     image_bytes = await ImageSelector.get_image_bytes(message, bot)
 
     product_data: ProductCreate = await StateToModel.from_context(state, ProductCreate)

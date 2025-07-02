@@ -2,13 +2,11 @@ from aiogram import Bot, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 
-from core.infrastructure import db_manager
 from core.infrastructure.services import (
     CaptionStrategyType,
     CatalogService,
     ErrorCaptionArg,
     ProductCaptionArgs,
-    ShopService,
 )
 from core.internal.models import ProductUpdate
 from utils import ImageSelector
@@ -16,12 +14,12 @@ from utils import ImageSelector
 from .states import EditProduct
 
 product_edit_router = Router()
-shop_service = ShopService(db_manager)
-catalog_service = CatalogService(shop_service)
 
 
 @product_edit_router.callback_query(lambda c: c.data.startswith("edit_name_"))
-async def proccess_edit_name(callback: CallbackQuery, state: FSMContext):
+async def proccess_edit_name(
+    callback: CallbackQuery, state: FSMContext, catalog_service: CatalogService
+):
     product_id = int(callback.data.split("_")[2])
     await callback.message.answer(catalog_service.config.edit_name_prompt)
     await state.update_data(product_id=product_id)
@@ -30,7 +28,9 @@ async def proccess_edit_name(callback: CallbackQuery, state: FSMContext):
 
 
 @product_edit_router.message(EditProduct.waiting_for_name)
-async def process_edit_name(message: Message, state: FSMContext):
+async def process_edit_name(
+    message: Message, state: FSMContext, catalog_service: CatalogService
+):
     data = await state.get_data()
     product_id = data.get("product_id")
 
@@ -50,7 +50,7 @@ async def process_edit_name(message: Message, state: FSMContext):
             strategy_type=CaptionStrategyType.EDIT,
             args=ProductCaptionArgs(product=product),
         )
-        
+
         await message.answer(caption)
 
     except Exception as e:
@@ -64,7 +64,9 @@ async def process_edit_name(message: Message, state: FSMContext):
 
 
 @product_edit_router.callback_query(lambda c: c.data.startswith("edit_desc_"))
-async def proccess_edit_descriprion(callback: CallbackQuery, state: FSMContext):
+async def proccess_edit_descriprion(
+    callback: CallbackQuery, state: FSMContext, catalog_service: CatalogService
+):
     product_id = int(callback.data.split("_")[2])
     await callback.message.answer(catalog_service.config.edit_description_prompt)
     await state.update_data(product_id=product_id)
@@ -73,7 +75,9 @@ async def proccess_edit_descriprion(callback: CallbackQuery, state: FSMContext):
 
 
 @product_edit_router.message(EditProduct.waiting_for_description)
-async def process_edit_description(message: Message, state: FSMContext):
+async def process_edit_description(
+    message: Message, state: FSMContext, catalog_service: CatalogService
+):
     data = await state.get_data()
     product_id = data.get("product_id")
     user_message = message.text.strip()
@@ -87,14 +91,14 @@ async def process_edit_description(message: Message, state: FSMContext):
         product = await catalog_service.update_product(
             product_id=product_id, product_data=ProductUpdate(description=user_message)
         )
-        
+
         caption = catalog_service.build_caption(
             strategy_type=CaptionStrategyType.EDIT,
             args=ProductCaptionArgs(product=product),
         )
-        
+
         await message.answer(caption)
-        
+
     except Exception as e:
         caption = catalog_service.build_caption_error(
             strategy_type=CaptionStrategyType.EDIT,
@@ -106,7 +110,9 @@ async def process_edit_description(message: Message, state: FSMContext):
 
 
 @product_edit_router.callback_query(lambda c: c.data.startswith("edit_price_"))
-async def proccess_edit_price(callback: CallbackQuery, state: FSMContext):
+async def proccess_edit_price(
+    callback: CallbackQuery, state: FSMContext, catalog_service: CatalogService
+):
     product_id = int(callback.data.split("_")[2])
     await callback.message.answer(catalog_service.config.edit_price_prompt)
     await state.update_data(product_id=product_id)
@@ -115,7 +121,9 @@ async def proccess_edit_price(callback: CallbackQuery, state: FSMContext):
 
 
 @product_edit_router.message(EditProduct.waiting_for_price)
-async def process_edit_price(message: Message, state: FSMContext):
+async def process_edit_price(
+    message: Message, state: FSMContext, catalog_service: CatalogService
+):
     data = await state.get_data()
     product_id = data.get("product_id")
 
@@ -137,7 +145,7 @@ async def process_edit_price(message: Message, state: FSMContext):
             strategy_type=CaptionStrategyType.EDIT,
             args=ProductCaptionArgs(product=product),
         )
-        
+
         await message.answer(caption)
     except ValueError:
         await message.answer("Введите корректную цену (например: 19.99)")
@@ -154,7 +162,9 @@ async def process_edit_price(message: Message, state: FSMContext):
 
 
 @product_edit_router.callback_query(lambda c: c.data.startswith("edit_image_"))
-async def proccess_edit_image(callback: CallbackQuery, state: FSMContext):
+async def proccess_edit_image(
+    callback: CallbackQuery, state: FSMContext, catalog_service: CatalogService
+):
     product_id = int(callback.data.split("_")[2])
     await callback.message.answer(catalog_service.config.edit_image_prompt)
     await state.update_data(product_id=product_id)
@@ -163,7 +173,9 @@ async def proccess_edit_image(callback: CallbackQuery, state: FSMContext):
 
 
 @product_edit_router.message(EditProduct.waiting_for_image)
-async def process_edit_image(message: Message, state: FSMContext, bot: Bot):
+async def process_edit_image(
+    message: Message, state: FSMContext, bot: Bot, catalog_service: CatalogService
+):
     data = await state.get_data()
     product_id = data.get("product_id")
 
@@ -178,7 +190,7 @@ async def process_edit_image(message: Message, state: FSMContext, bot: Bot):
 
     try:
         image_bytes = await ImageSelector.get_image_bytes(message, bot)
-        
+
         product = await catalog_service.update_product(
             product_id=product_id, product_data=ProductUpdate(image=image_bytes.read())
         )
@@ -187,7 +199,7 @@ async def process_edit_image(message: Message, state: FSMContext, bot: Bot):
             strategy_type=CaptionStrategyType.EDIT,
             args=ProductCaptionArgs(product=product),
         )
-        
+
         await message.answer(caption)
     except Exception as e:
         caption = catalog_service.build_caption_error(
