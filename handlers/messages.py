@@ -6,7 +6,9 @@ from core.infrastructure.services import DialogService
 
 from aiogram.fsm.context import FSMContext
 from .states import DialogStates
-from keyboards import get_dialog_keyboard
+from keyboards import get_dialog_keyboard, get_apeals_keyboard
+
+from filters import IsAdmin
 
 message_router = Router()
 
@@ -118,3 +120,13 @@ async def process_user_message(
         await state.set_state(DialogStates.waiting_for_message)
     except Exception:
         await message.answer("❌ Не удалось отправить сообщение. Попробуйте еще раз.")
+
+@message_router.message(Command("showapeals"), IsAdmin())
+async def show_appeals(message: Message, state: FSMContext, dialog_service: DialogService):
+    try:
+        not_read_dialogs = await dialog_service.not_read_dialogs(message.from_user.id)
+        keyboard = get_apeals_keyboard(not_read_dialogs)
+        await message.answer("Все поступившие обращения", reply_markup=keyboard)
+
+    except Exception:
+        await message.answer("❌ Не удалось загрузить сообщения.")

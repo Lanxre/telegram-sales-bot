@@ -1,5 +1,5 @@
 from contextlib import asynccontextmanager
-from typing import AsyncIterator, List
+from typing import AsyncIterator, List, Optional
 
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -214,3 +214,8 @@ class DialogService:
 
             except Exception as e:
                 logger.error(f"Error finding available admin: {e}")
+
+    async def not_read_dialogs(self, admin_id: int, limit: Optional[int] = 10, offset: Optional[int] = 0) -> List[Dialog]:
+        async with self.db_manager.get_db_session() as session:
+            dialog_repo = self.db_manager.get_repo(DialogRepository, session)
+            return await dialog_repo.get_unread_dialogs(admin_id, limit, offset)

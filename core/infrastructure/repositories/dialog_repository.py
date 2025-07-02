@@ -1,4 +1,5 @@
-from typing import Optional
+from typing import List, Optional
+
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -25,8 +26,21 @@ class DialogRepository(SQLAlchemyRepository[Dialog, DialogCreate, DialogUpdate])
 
     async def count_unread_dialogs(self, admin_id: int) -> int:
         query = select(func.count(Dialog.id)).where(
-            (Dialog.user2_id == admin_id)
-            & (not Dialog.is_read)
+            (Dialog.user2_id == admin_id) & (Dialog.is_read == 0)
         )
         result = await self.session.execute(query)
         return result.scalar() or 0
+
+    async def get_unread_dialogs(self, admin_id: int, limit: Optional[int] = 10, offset: Optional[int] = 0) -> List[Dialog]:
+        query = (
+            select(Dialog)
+            .where(
+                (Dialog.user2_id == admin_id) & (Dialog.is_read == 0)
+            )
+            .order_by(Dialog.updated_at.desc())
+            .limit(limit)
+            .offset(offset)
+        )
+
+        result = await self.session.execute(query)
+        return result.scalars().all()
