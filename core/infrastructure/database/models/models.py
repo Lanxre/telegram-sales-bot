@@ -177,3 +177,6 @@ class User(BaseModel):
         foreign_keys="Dialog.user2_id", back_populates="user2"
     )
     messages: Mapped[List["Message"]] = relationship(back_populates="sender")
+
+    def __repr__(self):
+        return f"<User(telegram_id={self.telegram_id}, full_name={self.full_name})>"
