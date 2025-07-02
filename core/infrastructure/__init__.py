@@ -1,4 +1,4 @@
-from config import load_settings
+from config import load_settings, AdminConfig
 
 from .database import DatabaseManager
 from .repositories import (
@@ -9,6 +9,7 @@ from .repositories import (
 )
 
 db_settings, _ = load_settings()
+admin_config = AdminConfig(admin_ids=[794764254])
 
 db_manager = DatabaseManager(
     config=db_settings,
@@ -22,4 +23,4 @@ db_manager = DatabaseManager(
     ],
 )
 
-__all__ = ["db_manager"]
+__all__ = ["db_manager", "admin_config"]

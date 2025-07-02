@@ -4,19 +4,20 @@ from typing import AsyncIterator, List
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from config import AdminConfig
 from core.infrastructure.database import DatabaseManager
 from core.infrastructure.database.models import Dialog, Message
 from core.infrastructure.repositories import DialogRepository, MessageRepository
 from core.internal.models import DialogCreate, DialogUpdate, MessageCreate
-from filters import get_admins_ids
 from logger import LoggerBuilder
 
 logger = LoggerBuilder("Dialog - Service").add_stream_handler().build()
 
 
 class DialogService:
-    def __init__(self, db_manager: DatabaseManager):
+    def __init__(self, db_manager: DatabaseManager, admin_config: AdminConfig):
         self._db_manager = db_manager
+        self._admin_config = admin_config
 
     @property
     def db_manager(self) -> DatabaseManager:
@@ -63,7 +64,9 @@ class DialogService:
                 return existing_dialog
 
             try:
-                dialog_data = DialogCreate(id=dialog_id, user1_id=user1_id, user2_id=user2_id)
+                dialog_data = DialogCreate(
+                    id=dialog_id, user1_id=user1_id, user2_id=user2_id
+                )
                 dialog = await dialog_repo.create(dialog_data)
                 logger.info(f"Created new dialog ID: {dialog.id}")
                 return dialog
@@ -72,9 +75,7 @@ class DialogService:
                 logger.error(f"Dialog creation failed: {str(e)}")
                 raise ValueError("Failed to create dialog") from e
 
-    async def update_dialog(
-        self, dialog_id: int,  dialog_data: DialogUpdate
-    ) -> Dialog:
+    async def update_dialog(self, dialog_id: int, dialog_data: DialogUpdate) -> Dialog:
         async with self._get_session() as session:
             dialog_repo = self.db_manager.get_repo(DialogRepository, session)
 
@@ -194,6 +195,22 @@ class DialogService:
 
             logger.info(f"Retrieved {len(dialogs)} dialogs for user {user_id}")
             return dialogs
-    
+
     async def get_admin_id_for_dialog(self) -> int:
-        return get_admins_ids()[0]
+        async with self.db_manager.get_db_session() as session:
+            try:
+                admin_ids = self._admin_config.admin_ids
+
+                dialog_repo = self.db_manager.get_repo(DialogRepository, session)
+                admin_stats = []
+
+                for admin_id in admin_ids:
+                    unread_count = await dialog_repo.count_unread_dialogs(admin_id)
+                    admin_stats.append((admin_id, unread_count))
+
+                admin_stats.sort(key=lambda x: x[1])
+
+                return admin_stats[0][0]
+
+            except Exception as e:
+                logger.error(f"Error finding available admin: {e}")

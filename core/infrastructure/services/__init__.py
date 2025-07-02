@@ -1,3 +1,4 @@
+from .admin_service import AdminService
 from .catalog_service import (
     CallbackAction,
     CaptionStrategyType,
@@ -18,4 +19,5 @@ __all__ = [
     "ErrorCaptionArg",
     "CallbackAction",
     "DialogService",
+    "AdminService",
 ]
