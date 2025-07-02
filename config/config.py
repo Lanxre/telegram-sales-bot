@@ -4,6 +4,16 @@ from typing import Optional
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from dataclasses import dataclass
+from pathlib import Path
+from time import time
+from typing import List
+
+from logger import LoggerBuilder
+from utils import StringBuilder
+
+logger = LoggerBuilder("CONFIG").add_stream_handler().build()
+
 
 class ConfigBase(BaseSettings):
     """Base configuration class for shared settings."""
@@ -87,3 +97,37 @@ class TelegramSettings(ConfigBase):
 def load_settings() -> tuple[DatabaseSettings, TelegramSettings]:
     """Load all application settings."""
     return DatabaseSettings.load(), TelegramSettings.load()
+
+
+@dataclass
+class AdminConfig:
+    admin_ids: List[int]
+    config_path: Path = Path("./admin_ids.txt")
+    cache_time: int = 3600
+
+    def __post_init__(self):
+        self._last_updated = 0
+        self._load_admin_ids()
+
+    def _load_admin_ids(self) -> None:
+        try:
+            if self.config_path.exists():
+                with open(self.config_path, "r", encoding="utf-8") as f:
+                    ids = f.readline().strip().split(",")
+                    self.admin_ids = [int(x) for x in ids if x.strip()]
+                    self._last_updated = time()
+                    builder = StringBuilder()
+                    for i, admin_id in enumerate(ids, 1):
+                        builder.append(f"{i}. {admin_id}, ")
+
+                    logger.info(f"Admins ids: {builder.to_string()}")
+
+        except Exception as e:
+            logger.error(f"Failed to load admin IDs: {e}")
+            raise
+
+    def is_admin(self, user_id: int) -> bool:
+        if time() - self._last_updated > self.cache_time:
+            self._load_admin_ids()
+
+        return user_id in self.admin_ids
