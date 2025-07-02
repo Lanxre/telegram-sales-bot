@@ -1,22 +1,22 @@
 [
     {
         "name": "/start",
-        "description": "initial message command"
+        "description": "Команда начального сообщения"
     },
     {
         "name": "/help",
-        "description": "list of all bot commands"
+        "description": "Список всех команд бота"
     },
     {
         "name": "/catalog",
-        "description": "list of all items and there prices"
+        "description": "Каталог всех товаров выставленных на продажу"
     },
     {
         "name": "/addproduct",
-        "description": "Only for admins. Can add product to catalog"
+        "description": "Только для администраторов. Добавление товара в каталог"
     },
     {
         "name": "/startdialog",
-        "description": "If have questions you can ask him for admin"
+        "description": "Поддержка. Если возник вопрос, можно его задать и вам ответят."
     }
 ]
