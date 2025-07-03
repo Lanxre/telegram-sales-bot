@@ -131,6 +131,19 @@ class CatalogService:
 
         return products
 
+    async def get_product(self, product_id: int) -> Product:
+        """
+        Get single product by ID.
+
+        Args:
+            product_id: ID of product to retrieve
+
+        Returns:
+            Optional[Product]: Product if found, None otherwise
+        """
+        product = await self.shop_service.get_product(product_id)
+        return product
+
     async def delete_product(self, product_id: int) -> bool:
         is_delete = await self.shop_service.delete_product(product_id)
         return is_delete
