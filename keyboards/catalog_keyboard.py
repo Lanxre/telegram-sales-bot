@@ -52,7 +52,7 @@ def get_catalog_keyboard(
 
     shop_card_button = [InlineKeyboardButton(
         text="Добавить в корзину 🛒",
-        callback_data=f"shoppcard_{product_id}"
+        callback_data=f"shopcard_add_{product_id}"
     )]
 
     # Combine rows (filter empty rows)
