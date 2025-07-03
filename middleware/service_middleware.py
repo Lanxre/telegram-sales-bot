@@ -5,7 +5,12 @@ from aiogram.types import TelegramObject
 
 from config import AdminConfig
 from core.infrastructure.database import DatabaseManager
-from core.infrastructure.services import CatalogService, DialogService, ShopService
+from core.infrastructure.services import (
+    CatalogService,
+    DialogService,
+    ShopCardService,
+    ShopService,
+)
 
 
 class ServiceMiddleware(BaseMiddleware):
@@ -25,6 +30,7 @@ class ServiceMiddleware(BaseMiddleware):
             "dialog_service": DialogService(self.db_manager, self.admin_config),
             "catalog_service": CatalogService(ShopService(self.db_manager)),
             "shop_service": ShopService(self.db_manager),
+            "shop_card_service": ShopCardService(self.db_manager),
         }
 
         data.update(services)

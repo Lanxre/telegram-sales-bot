@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class ProductCreate(BaseModel):
@@ -66,5 +66,27 @@ class MessageCreate(BaseModel):
     sender_id: int
     content: str
 
+
 class MessageUpdate(BaseModel):
     content: str
+
+
+class ShopCardItemCreate(BaseModel):
+    shop_card_id: Optional[int] = None
+    product_id: int = Field(..., gt=0)
+    quantity: int = Field(1, gt=0, le=100)
+
+
+class ShopCardCreate(BaseModel):
+    user_id: int = Field(..., gt=0)
+    items: Optional[List[ShopCardItemCreate]] = None
+
+
+class ShopCardItemUpdate(BaseModel):
+    id: Optional[int] = Field(None, gt=0)
+    product_id: Optional[int] = Field(None, gt=0)
+    quantity: Optional[int] = Field(None, gt=0, le=100)
+
+
+class ShopCardUpdate(BaseModel):
+    items: List[ShopCardItemUpdate] = Field(..., min_items=1)

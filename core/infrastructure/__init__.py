@@ -6,6 +6,8 @@ from .repositories import (
     MessageRepository,
     ProductRepository,
     UserRepository,
+    ShopCardItemRepository,
+    ShopCardRepository
 )
 
 db_settings, _ = load_settings()
@@ -20,6 +22,8 @@ db_manager = DatabaseManager(
         ProductRepository,
         DialogRepository,
         MessageRepository,
+        ShopCardRepository,
+        ShopCardItemRepository,
     ],
 )
 

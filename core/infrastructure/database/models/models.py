@@ -43,6 +43,9 @@ class Product(BaseModel):
         back_populates="product",
         viewonly=True,  # Make read-only to avoid foreign key conflicts
     )
+    shop_card_items: Mapped[List["ShopCardItem"]] = relationship(
+        back_populates="product"
+    )
 
 
 class ProductOrder(BaseModel):
@@ -153,6 +156,49 @@ class Message(BaseModel):
         return f"<Message(id={self.id}, dialog_id={self.dialog_id}, sender_id={self.sender_id}, content='{self.content[:20]}...')>"
 
 
+class ShopCard(BaseModel):
+    __tablename__ = "shop_cards"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.telegram_id"), nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.now(timezone.utc)
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.now(timezone.utc),
+        onupdate=datetime.now(timezone.utc),
+    )
+
+    user: Mapped["User"] = relationship(back_populates="shop_cards")
+    items: Mapped[List["ShopCardItem"]] = relationship(
+        back_populates="shop_card", cascade="all, delete-orphan"
+    )
+
+    def __repr__(self):
+        return f"<ShopCard(id={self.id}, user_id={self.user_id})>"
+
+
+class ShopCardItem(BaseModel):
+    __tablename__ = "shop_card_items"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    shop_card_id: Mapped[int] = mapped_column(ForeignKey("shop_cards.id"))
+    product_id: Mapped[int] = mapped_column(ForeignKey("Product.id"))
+    quantity: Mapped[int] = mapped_column(Integer, default=1)
+    added_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.now(timezone.utc)
+    )
+
+    shop_card: Mapped["ShopCard"] = relationship(back_populates="items")
+    product: Mapped["Product"] = relationship()
+
+    def __repr__(self):
+        return f"<ShopCardItem(id={self.id}, product_id={self.product_id}, quantity={self.quantity})>"
+
+
 class User(BaseModel):
     __tablename__ = "users"
 
@@ -175,6 +221,9 @@ class User(BaseModel):
     )
     dialogs_as_user2: Mapped[List["Dialog"]] = relationship(
         foreign_keys="Dialog.user2_id", back_populates="user2"
+    )
+    shop_cards: Mapped[List["ShopCard"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
     )
     messages: Mapped[List["Message"]] = relationship(back_populates="sender")
 

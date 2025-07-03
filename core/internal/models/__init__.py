@@ -10,6 +10,10 @@ from .models import (
     ProductUpdate,
     UserCreate,
     UserUpdate,
+    ShopCardCreate,
+    ShopCardItemCreate,
+    ShopCardItemUpdate,
+    ShopCardUpdate,
 )
 
 __all__ = [
@@ -24,4 +28,8 @@ __all__ = [
     "DialogUpdate",
     "MessageCreate",
     "MessageUpdate",
+    "ShopCardCreate",
+    "ShopCardItemCreate",
+    "ShopCardItemUpdate",
+    "ShopCardUpdate",
 ]
