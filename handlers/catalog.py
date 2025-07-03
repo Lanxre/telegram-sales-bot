@@ -39,12 +39,12 @@ async def command_catalog(
             await message.answer_photo(
                 photo=image_file,
                 caption=caption,
-                reply_markup=get_catalog_keyboard(0, len(products), is_admin),
+                reply_markup=get_catalog_keyboard(0, product.id, len(products), is_admin),
             )
         else:
             await message.answer(
                 text=caption,
-                reply_markup=get_catalog_keyboard(0, len(products), is_admin),
+                reply_markup=get_catalog_keyboard(0, product.id, len(products), is_admin),
             )
 
     except Exception as e:
@@ -114,7 +114,7 @@ async def handle_navigation(
             args=ProductCaptionArgs(product=product),
         )
 
-        keyboard = get_catalog_keyboard(new_index, len(products), is_admin)
+        keyboard = get_catalog_keyboard(new_index, product.id, len(products), is_admin)
 
         if image_file := await catalog_service.get_product_image(product.id, product):
             await bot.edit_message_media(

@@ -2,7 +2,8 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 def get_catalog_keyboard(
-    current_index: int, 
+    current_index: int,
+    product_id: int, 
     total_products: int, 
     is_admin: bool = False
 ) -> InlineKeyboardMarkup:
@@ -49,9 +50,14 @@ def get_catalog_keyboard(
             )
         ])
 
+    shop_card_button = [InlineKeyboardButton(
+        text="Добавить в корзину 🛒",
+        callback_data=f"shoppcard_{product_id}"
+    )]
+
     # Combine rows (filter empty rows)
     keyboard = [
-        row for row in [navigation_buttons, admin_buttons] 
+        row for row in [navigation_buttons, shop_card_button, admin_buttons] 
         if row  # Skip empty rows
     ]
 

@@ -58,7 +58,7 @@ async def cancel_delete(
         )
 
         is_admin = await IsAdmin()(callback)
-        keyboard = get_catalog_keyboard(current_index, len(products), is_admin)
+        keyboard = get_catalog_keyboard(current_index, product.id, len(products), is_admin)
 
         if image_file := await catalog_service.get_product_image(product.id, product):
             await bot.edit_message_media(
