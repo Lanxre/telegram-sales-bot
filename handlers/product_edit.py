@@ -20,7 +20,7 @@ product_edit_router = Router()
 async def proccess_edit_name(
     callback: CallbackQuery, state: FSMContext, catalog_service: CatalogService
 ):
-    product_id = int(callback.data.split("_")[2])
+    product_id = int(callback.data.split("_")[-1])
     await callback.message.answer(catalog_service.config.edit_name_prompt)
     await state.update_data(product_id=product_id)
     await state.set_state(EditProduct.waiting_for_name)
@@ -67,7 +67,7 @@ async def process_edit_name(
 async def proccess_edit_descriprion(
     callback: CallbackQuery, state: FSMContext, catalog_service: CatalogService
 ):
-    product_id = int(callback.data.split("_")[2])
+    product_id = int(callback.data.split("_")[-1])
     await callback.message.answer(catalog_service.config.edit_description_prompt)
     await state.update_data(product_id=product_id)
     await state.set_state(EditProduct.waiting_for_description)
@@ -113,7 +113,7 @@ async def process_edit_description(
 async def proccess_edit_price(
     callback: CallbackQuery, state: FSMContext, catalog_service: CatalogService
 ):
-    product_id = int(callback.data.split("_")[2])
+    product_id = int(callback.data.split("_")[-1])
     await callback.message.answer(catalog_service.config.edit_price_prompt)
     await state.update_data(product_id=product_id)
     await state.set_state(EditProduct.waiting_for_price)
@@ -165,7 +165,7 @@ async def process_edit_price(
 async def proccess_edit_image(
     callback: CallbackQuery, state: FSMContext, catalog_service: CatalogService
 ):
-    product_id = int(callback.data.split("_")[2])
+    product_id = int(callback.data.split("_")[-1])
     await callback.message.answer(catalog_service.config.edit_image_prompt)
     await state.update_data(product_id=product_id)
     await state.set_state(EditProduct.waiting_for_image)

@@ -138,7 +138,7 @@ async def show_appeals(message: Message, dialog_service: DialogService):
 @message_router.callback_query(lambda c: c.data.startswith("dialog_apeals_"))
 async def show_select_apeals(callback: CallbackQuery, dialog_service: DialogService):
     try:
-        dialog_id = int(callback.data.split("_")[2])
+        dialog_id = int(callback.data.split("_")[-1])
         dialog = await dialog_service.get_dialog(dialog_id)
         keyboard = get_message_keyboard(dialog)
         await callback.message.answer(
@@ -154,7 +154,7 @@ async def show_select_apeals(callback: CallbackQuery, dialog_service: DialogServ
 
 @message_router.callback_query(lambda c: c.data.startswith("answer_apeals_"))
 async def answer_apeals_tag(callback: CallbackQuery, state: FSMContext):
-    dialog_id = int(callback.data.split("_")[2])
+    dialog_id = int(callback.data.split("_")[-1])
     await callback.message.answer("Ожидается ответ пользователю")
     await state.set_data(data={"dialog_id": dialog_id})
     await state.set_state(DialogStates.waiting_for_answer_apeals)

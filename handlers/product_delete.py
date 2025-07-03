@@ -16,7 +16,7 @@ product_delete_router = Router()
 
 @product_delete_router.callback_query(lambda c: c.data.startswith("confirm_delete_"))
 async def confirm_delete(callback: CallbackQuery, catalog_service: CatalogService):
-    product_id = int(callback.data.split("_")[2])
+    product_id = int(callback.data.split("_")[-1])
     try:
         is_delete = await catalog_service.delete_product(product_id)
         if is_delete:
@@ -34,7 +34,7 @@ async def cancel_delete(
     callback: CallbackQuery, bot: Bot, catalog_service: CatalogService
 ) -> None:
     try:
-        product_id = int(callback.data.split("_")[2])
+        product_id = int(callback.data.split("_")[-1])
         products = await catalog_service.get_products()
 
         if not products:
