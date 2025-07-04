@@ -29,14 +29,19 @@ Below are example screenshots of the bot's command outputs:
 
 - **/start**
 ![start command](/assets/images/start.png)
+
 - **/help**
 ![help command](/assets/images/help.png)
+
 - **/catalog**
 ![catalog command](/assets/images/catalog.png)
+
 - **/startdialog**
 ![startdialog command](/assets/images/startdialog.png)
+
 - **/shopcard**
 ![shopcard command](/assets/images/shopcard.png)
+
 - **/myorders**
 ![myorders command](/assets/images/myorders.png)
 
