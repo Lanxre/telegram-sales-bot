@@ -11,6 +11,7 @@ from core.internal.models import (
     ShopCardCreate,
     ShopCardItemCreate,
     ShopCardItemUpdate,
+    ProductItem,
 )
 from core.internal.types import ShopCardContent, ShopCardTotal
 from logger import LoggerBuilder
@@ -120,6 +121,7 @@ class ShopCardService:
                     price=item.product.price,
                     quantity=item.quantity,
                     total=item.product.price * item.quantity,
+                    product=ProductItem.model_validate(item.product)
                 )
                 for item in card.items
             ]

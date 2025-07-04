@@ -1,6 +1,7 @@
-from typing import List
+from typing import List, Optional
 
 from pydantic import BaseModel
+from core.internal.models import ProductItem
 
 
 class ShopCardContent(BaseModel):
@@ -10,6 +11,7 @@ class ShopCardContent(BaseModel):
     price: float
     quantity: int
     total: float
+    product: Optional[ProductItem] = None
 
 
 class ShopCardTotal(BaseModel):

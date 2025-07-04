@@ -10,10 +10,12 @@ from sqlalchemy import (
     LargeBinary,
     String,
     Text,
+    Enum
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import BaseModel
+from core.internal.enums import OrderStatus
 
 
 class Product(BaseModel):
@@ -76,6 +78,12 @@ class Order(BaseModel):
     total_price: Mapped[float] = mapped_column(Float, nullable=False)
     total_count: Mapped[int] = mapped_column(Integer, nullable=False)
     order_note: Mapped[Optional[str]] = mapped_column(Text)
+    delivery_address: Mapped[Optional[str]] = mapped_column(Text)
+    status: Mapped[OrderStatus] = mapped_column(
+        Enum(OrderStatus),
+        default=OrderStatus.PENDING,
+        nullable=False
+    )
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.telegram_id"))
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.now(timezone.utc)

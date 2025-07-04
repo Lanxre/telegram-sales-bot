@@ -14,6 +14,7 @@ from .models import (
     ShopCardItemCreate,
     ShopCardItemUpdate,
     ShopCardUpdate,
+    ProductItem
 )
 
 __all__ = [
@@ -32,4 +33,5 @@ __all__ = [
     "ShopCardItemCreate",
     "ShopCardItemUpdate",
     "ShopCardUpdate",
+    "ProductItem"
 ]

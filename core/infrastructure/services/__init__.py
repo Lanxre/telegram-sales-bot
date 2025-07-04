@@ -9,6 +9,7 @@ from .catalog_service import (
 from .dialog_service import DialogService
 from .shop_card_service import ShopCardService
 from .shop_service import ShopService
+from .order_service import OrderService
 
 __all__ = [
     "ShopService",
@@ -21,4 +22,5 @@ __all__ = [
     "DialogService",
     "AdminService",
     "ShopCardService",
+    "OrderService"
 ]

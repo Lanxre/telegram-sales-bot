@@ -1,13 +1,14 @@
-from config import load_settings, AdminConfig
+from config import AdminConfig, load_settings
 
 from .database import DatabaseManager
 from .repositories import (
     DialogRepository,
     MessageRepository,
+    OrderRepository,
     ProductRepository,
-    UserRepository,
     ShopCardItemRepository,
-    ShopCardRepository
+    ShopCardRepository,
+    UserRepository,
 )
 
 db_settings, _ = load_settings()
@@ -24,6 +25,7 @@ db_manager = DatabaseManager(
         MessageRepository,
         ShopCardRepository,
         ShopCardItemRepository,
+        OrderRepository,
     ],
 )
 

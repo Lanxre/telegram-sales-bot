@@ -1,6 +1,8 @@
 from typing import List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
+
+from core.internal.enums import OrderStatus
 
 
 class ProductCreate(BaseModel):
@@ -17,19 +19,32 @@ class ProductUpdate(BaseModel):
     image: Optional[bytes] = None
 
 
+class ProductItem(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    description: Optional[str] = None
+    price: float
+    image: Optional[bytes] = None
+
+
 class OrderCreate(BaseModel):
+    user_id: int
     total_price: float
     total_count: int
     order_note: Optional[str] = None
-    user_id: int
-    product_ids: Optional[List[int]] = None
+    delivery_address: Optional[str] = None
+    products: Optional[List[ProductItem]] = None
 
 
 class OrderUpdate(BaseModel):
     total_price: Optional[float] = None
     total_count: Optional[int] = None
     order_note: Optional[str] = None
-    product_ids: Optional[List[int]] = None
+    delivery_address: Optional[str] = None
+    status: Optional[OrderStatus] = None
+    products: List[ProductUpdate] = Field(..., min_length=1)
 
 
 class UserCreate(BaseModel):
@@ -89,4 +104,4 @@ class ShopCardItemUpdate(BaseModel):
 
 
 class ShopCardUpdate(BaseModel):
-    items: List[ShopCardItemUpdate] = Field(..., min_items=1)
+    items: List[ShopCardItemUpdate] = Field(..., min_length=1)

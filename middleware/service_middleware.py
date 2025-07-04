@@ -8,6 +8,7 @@ from core.infrastructure.database import DatabaseManager
 from core.infrastructure.services import (
     CatalogService,
     DialogService,
+    OrderService,
     ShopCardService,
     ShopService,
 )
@@ -31,6 +32,7 @@ class ServiceMiddleware(BaseMiddleware):
             "catalog_service": CatalogService(ShopService(self.db_manager)),
             "shop_service": ShopService(self.db_manager),
             "shop_card_service": ShopCardService(self.db_manager),
+            "order_service": OrderService(self.db_manager),
         }
 
         data.update(services)
