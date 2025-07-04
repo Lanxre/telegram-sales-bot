@@ -19,7 +19,7 @@ async def command_shopcard(
     catalog_service: CatalogService,
 ) -> None:
     cart_contents = await shop_card_service.get_card_contents(message.from_user.id)
-
+    
     if not cart_contents:
         await message.answer("🛒 Ваша корзина пуста")
         return
@@ -195,7 +195,9 @@ async def shopcard_item_dec(
 
             cart_contents = await shop_card_service.get_card_contents(user_id)
             total_text_res = await shop_card_service.get_total_caption(cart_contents)
-            keyboard = get_shop_card_keyboard(current_index, product_id, len(cart_contents))
+            keyboard = get_shop_card_keyboard(
+                current_index, product_id, len(cart_contents)
+            )
 
             await callback.answer("✅ Кол-во уменьшено")
             await bot.edit_message_caption(
@@ -338,6 +340,5 @@ async def handle_next_item(
             )
         await callback.answer()
 
-    except Exception as e:
-        logger.error(f"Next item error: {e}")
+    except Exception:
         await callback.answer("❌ Ошибка навигации", show_alert=True)
