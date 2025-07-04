@@ -9,7 +9,7 @@ from filters import IsAdmin
 from keyboards import get_apeals_keyboard, get_dialog_keyboard, get_message_keyboard
 from logger import LoggerBuilder
 
-from .states import DialogStates
+from states import DialogStates
 
 logger = LoggerBuilder("MessageRouter").add_stream_handler().build()
 message_router = Router()

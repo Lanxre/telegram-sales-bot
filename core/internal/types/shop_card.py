@@ -16,5 +16,5 @@ class ShopCardContent(BaseModel):
 
 class ShopCardTotal(BaseModel):
     items_count: int
-    total_price: int
+    total_price: float
     items: List[ShopCardContent]

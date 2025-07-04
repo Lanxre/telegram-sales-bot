@@ -6,11 +6,18 @@ from .product_add import product_add_router
 from .product_delete import product_delete_router
 from .product_edit import product_edit_router
 from .shop_card import shop_card_router
+from .order import order_router
 
 catalog_router.include_routers(
     product_edit_router, product_add_router, product_delete_router
 )
 
 __routers__ = HandleRouters(
-    routers=(initial_router, catalog_router, message_router, shop_card_router)
+    routers=(
+        initial_router,
+        catalog_router,
+        message_router,
+        shop_card_router,
+        order_router,
+    )
 )

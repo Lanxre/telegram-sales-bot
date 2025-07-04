@@ -5,8 +5,8 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.infrastructure.database import DatabaseManager
-from core.infrastructure.database.models import Order, Product
-from core.infrastructure.repositories import OrderRepository
+from core.infrastructure.database.models import Order
+from core.infrastructure.repositories import OrderRepository, ProductRepository
 from core.internal.enums import OrderStatus
 from core.internal.models import OrderCreate, OrderUpdate
 from logger import LoggerBuilder
@@ -34,8 +34,20 @@ class OrderService:
 
     async def create_order(self, order_data: OrderCreate) -> Order:
         async with self._get_session() as session:
-            oreder_repo = self.db_manager.get_repo(OrderRepository, session)
-            order = await oreder_repo.create(order_data)
+            product_repo = self.db_manager.get_repo(ProductRepository, session)
+            products = [await product_repo.get(p.id) for p in order_data.products]
+            order = Order(
+                user_id=order_data.user_id,
+                total_price=order_data.total_price,
+                total_count=order_data.total_count,
+                delivery_address=order_data.delivery_address,
+                order_note=order_data.order_note,
+                status=order_data.status,
+                products=products
+            )
+
+            session.add(order)
+            await session.commit()
             return order
 
     async def get_order(self, order_id: int) -> Optional[Order]:

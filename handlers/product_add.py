@@ -8,7 +8,7 @@ from core.internal.models import ProductCreate
 from filters import IsAdmin
 from utils import ImageSelector, StateToModel
 
-from .states import AddProduct
+from states import AddProduct
 
 product_add_router = Router()
 

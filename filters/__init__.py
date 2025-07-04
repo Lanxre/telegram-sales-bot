@@ -1,3 +1,4 @@
 from .admin_filter import IsAdmin
+from .text import TextFilter
 
-__all__ = ["IsAdmin"]
+__all__ = ["IsAdmin", "TextFilter"]

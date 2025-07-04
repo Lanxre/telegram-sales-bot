@@ -11,7 +11,7 @@ from core.infrastructure.services import (
 from core.internal.models import ProductUpdate
 from utils import ImageSelector
 
-from .states import EditProduct
+from states import EditProduct
 
 product_edit_router = Router()
 

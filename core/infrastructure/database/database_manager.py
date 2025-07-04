@@ -105,7 +105,7 @@ class DatabaseManager:
                 await session.rollback()
                 raise
             except Exception as e:
-                logger.error(f"Unexpected error: {str(e)}")
+                logger.error(f"Unexpected error: {str(e)}", exc_info=True)
                 await session.rollback()
                 raise
             finally:

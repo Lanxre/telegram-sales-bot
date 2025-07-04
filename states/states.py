@@ -22,3 +22,7 @@ class EditProduct(StatesGroup):
 class DialogStates(StatesGroup):
     waiting_for_message = State()
     waiting_for_answer_apeals = State()
+
+class OrderConfirm(StatesGroup):
+    waiting_for_order_note = State()
+    waiting_for_address_delivery = State()

@@ -36,6 +36,7 @@ class OrderCreate(BaseModel):
     order_note: Optional[str] = None
     delivery_address: Optional[str] = None
     products: Optional[List[ProductItem]] = None
+    status: Optional[OrderStatus] = None
 
 
 class OrderUpdate(BaseModel):
