@@ -27,17 +27,17 @@ The bot supports the following commands:
 # Command Examples
 Below are example screenshots of the bot's command outputs:
 
-**/start**
+- **/start**
 ![start command](/assets/images/start.png)
-* **/help**
+- **/help**
 ![help command](/assets/images/help.png)
-* **/catalog**
+- **/catalog**
 ![catalog command](/assets/images/catalog.png)
-* **/startdialog**
+- **/startdialog**
 ![startdialog command](/assets/images/startdialog.png)
-* **/shopcard**
+- **/shopcard**
 ![shopcard command](/assets/images/shopcard.png)
-* **/myorders**
+- **/myorders**
 ![myorders command](/assets/images/myorders.png)
 
 
