@@ -86,10 +86,7 @@ Below are example screenshots of the bot's command outputs:
    alembic upgrade head
    ```
 
-5. **Change admin id** in [Admin ids located](/admin_ids.txt) and [register in code](/core/infrastructure/__init__.py)
-    ```bash
-    15. admin_config = AdminConfig(admin_ids=[<You id>])
-    ```
+5. **Change admin id** in [Admin ids located](/admin_ids.txt)
 
 6. **Start the bot**:
 
