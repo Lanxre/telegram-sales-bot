@@ -6,12 +6,12 @@ from aiogram.types import (
     Message,
     ReplyKeyboardRemove,
 )
-from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from core.infrastructure.services import OrderService, ShopCardService
 from core.internal.enums import OrderStatus
 from core.internal.models import OrderCreate
 from filters import TextFilter
+from keyboards import get_order_confirm_keyboard
 from logger import LoggerBuilder
 from states import OrderConfirm
 
@@ -22,7 +22,10 @@ order_router = Router()
 
 @order_router.callback_query(F.data == "order_confirm")
 async def start_order_process(
-    callback: CallbackQuery, state: FSMContext, shop_card_service: ShopCardService
+    callback: CallbackQuery,
+    state: FSMContext,
+    shop_card_service: ShopCardService,
+    order_service: OrderService,
 ):
     try:
         cart_data = await shop_card_service.get_card_total(callback.from_user.id)
@@ -31,44 +34,40 @@ async def start_order_process(
             await callback.answer("🛒 Ваша корзина пуста", show_alert=True)
             return
 
-        await state.set_data(
-            {
-                "cart_contents": cart_data.items,
-                "total_price": cart_data.total_price,
-            }
+        await state.update_data(
+            cart_contents=cart_data.items, total_price=cart_data.total_price
         )
 
         await state.set_state(OrderConfirm.waiting_for_order_note)
-
+        text = await order_service.get_text_order_price(cart_data.total_price)
         await callback.message.answer(
-            f"💳 Оформление заказа на сумму: {cart_data.total_price} ₽\n\n"
-            "📝 Введите комментарий к заказу (например, пожелания по доставке):\n"
-            "Или нажмите /skip чтобы пропустить",
+            text,
             reply_markup=ReplyKeyboardRemove(),
         )
         await callback.answer()
 
-    except Exception as e:
-        logger.error(f"Order confirmation error: {e}", exc_info=True)
-        await callback.message.answer("❌ Ошибка при оформлении заказа")
+    except Exception:
+        await callback.message.answer(order_service.formatter.error)
         await state.clear()
 
 
 @order_router.message(
     OrderConfirm.waiting_for_order_note, ~TextFilter(equals="skip", ignore_case=True)
 )
-async def process_order_note(message: Message, state: FSMContext):
+async def process_order_note(
+    message: Message, state: FSMContext, order_service: OrderService
+):
     try:
         if message.text != "/skip":
             await state.update_data(order_note=message.text)
 
         await state.set_state(OrderConfirm.waiting_for_address_delivery)
         await message.answer(
-            "🏠 Теперь введите адрес доставки:\n(Укажите город, улицу, дом и квартиру)",
+            order_service.formatter.input_address,
             reply_markup=ReplyKeyboardRemove(),
         )
     except Exception:
-        await message.answer("❌ Ошибка при обработке комментария")
+        await message.answer(order_service.formatter.error_note)
         await state.clear()
 
 
@@ -87,32 +86,28 @@ async def skip_order_note(message: Message, state: FSMContext):
 async def process_delivery_address(
     message: Message,
     state: FSMContext,
+    order_service: OrderService,
 ):
     try:
         state_data = await state.get_data()
         address = message.text.strip()
 
-        builder = InlineKeyboardBuilder()
-        builder.button(text="✅ Подтвердить", callback_data="final_confirm")
-        builder.button(text="❌ Отменить", callback_data="order_cancel")
+        await state.update_data(delivery_address=address)
 
-        items_text = "\n".join(
-            f"{item.name} - {item.quantity} × {item.price} $"
-            for item in state_data["cart_contents"]
+        keyboard = get_order_confirm_keyboard()
+        text_for_confirm = await order_service.get_text_for_confirm(
+            items=state_data["cart_contents"],
+            total_price=state_data["total_price"],
+            address=address,
+            order_note=state_data.get("order_note", "не указан"),
         )
-
         await message.answer(
-            f"📦 Подтвердите заказ:\n\n"
-            f"🛒 Состав заказа:\n{items_text}\n\n"
-            f"💳 Итого: {state_data['total_price']} $\n\n"
-            f"🏠 Адрес доставки: {address}\n"
-            f"📝 Комментарий: {state_data.get('order_note', 'не указан')}",
-            reply_markup=builder.as_markup(),
+            text_for_confirm,
+            reply_markup=keyboard,
         )
 
-    except Exception as e:
-        logger.error(f"Order confirmation error: {e}", exc_info=True)
-        await message.answer("❌ Ошибка при обработке адреса")
+    except Exception:
+        await message.answer(order_service.formatter.error_address)
         await state.clear()
 
 
@@ -144,18 +139,12 @@ async def final_order_confirmation(
         if order:
             await shop_card_service.clear_card(callback.from_user.id)
 
-        await callback.message.edit_text(
-            f"✅ Заказ #{order.id} успешно оформлен!\n\n"
-            f"Статус: {order.status.value}\n"
-            f"Сумма: {order.total_price} $\n"
-            f"Адрес: {order.delivery_address or 'не указан'}\n\n"
-            f"Мы свяжемся с вами для уточнения деталей."
-        )
+        await callback.message.edit_text(order_service.get_text_confirm_order(order))
 
         await state.clear()
 
     except Exception:
-        await callback.message.answer("❌ Ошибка при оформлении заказа")
+        await callback.message.answer(order_service.formatter.error)
         await state.clear()
 
 
@@ -172,15 +161,8 @@ async def show_user_orders(message: Message, order_service: OrderService):
     orders = await order_service.get_user_orders(message.from_user.id)
 
     if not orders:
-        await message.answer("📦 У вас пока нет заказов")
+        await message.answer(order_service.formatter.no_exist)
         return
 
-    response = ["📦 Ваши заказы:"]
-    for order in orders:
-        response.append(
-            f"🆔 #{order.id} - {order.status.value}\n"
-            f"💳 {order.total_price} ₽ - {order.created_at.strftime('%d.%m.%Y')}\n"
-            f"🏠 {order.delivery_address or 'Адрес не указан'}"
-        )
-
-    await message.answer("\n\n".join(response))
+    text_orders = await order_service.get_text_orders(orders)
+    await message.answer(text_orders)

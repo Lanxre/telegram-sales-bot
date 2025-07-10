@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+from dataclasses import dataclass
 from typing import AsyncIterator, List, Optional
 
 from sqlalchemy.exc import SQLAlchemyError
@@ -9,18 +10,87 @@ from core.infrastructure.database.models import Order
 from core.infrastructure.repositories import OrderRepository, ProductRepository
 from core.internal.enums import OrderStatus
 from core.internal.models import OrderCreate, OrderUpdate
+from core.internal.types import ShopCardContent
 from logger import LoggerBuilder
+from utils import StringBuilder
 
 logger = LoggerBuilder("OrderService - Service").add_stream_handler().build()
+
+
+@dataclass(frozen=True)
+class OrderDisplayFormatter:
+    no_exist: str = "📦 У вас пока нет заказов"
+
+    error: str = "❌ Ошибка при оформлении заказа"
+    error_address: str = "❌ Ошибка при обработке адреса"
+    error_note: str = "❌ Ошибка при обработке комментария"
+
+    input_address: str = (
+        "🏠 Теперь введите адрес доставки:\n(Укажите город, улицу, дом и квартиру)"
+    )
+
+    async def get_text_confirm_order(self, order: Order) -> str:
+        return (
+            f"✅ Заказ #{order.id} успешно оформлен!\n\n"
+            f"Статус: {order.status.value}\n"
+            f"Сумма: {order.total_price} $\n"
+            f"Адрес: {order.delivery_address or 'не указан'}\n\n"
+            f"Мы свяжемся с вами для уточнения деталей."
+        )
+
+    async def get_text_orders(self, orders: List[Order]) -> str:
+        response = StringBuilder("📦 Ваши заказы:")
+        for order in orders:
+            response.append("\n\n")
+            response.append(
+                f"🆔 #{order.id} - {order.status.value}\n"
+                f"💳 {order.total_price} $ - {order.created_at.strftime('%d.%m.%Y')}\n"
+                f"🏠 {order.delivery_address or 'Адрес не указан'}\n"
+                f"📊 - {order.status.value}"
+            )
+        return response.to_string()
+
+    async def get_items_text(self, items: List[ShopCardContent]) -> str:
+        items_text = "\n".join(
+            f"{item.name} - {item.quantity} × {item.price} $" for item in items
+        )
+        return items_text
+
+    async def get_text_for_confirm(
+        self,
+        items_text: str,
+        total_price: float,
+        address: str,
+        order_note: Optional[str] = "Не указан",
+    ) -> str:
+        return (
+            f"📦 Подтвердите заказ:\n\n"
+            f"🛒 Состав заказа:\n{items_text}\n\n"
+            f"💳 Итого: {total_price} $\n\n"
+            f"🏠 Адрес доставки: {address}\n"
+            f"📝 Комментарий: {order_note}"
+        )
+
+    async def get_text_order_price(self, price: float) -> str:
+        return (
+            f"💳 Оформление заказа на сумму: {price} $\n\n"
+            "📝 Введите комментарий к заказу (например, пожелания по доставке):\n"
+            "Или нажмите /skip чтобы пропустить"
+        )
 
 
 class OrderService:
     def __init__(self, db_manager: DatabaseManager):
         self._db_manager = db_manager
+        self._display_formatter = OrderDisplayFormatter()
 
     @property
     def db_manager(self) -> DatabaseManager:
         return self._db_manager
+
+    @property
+    def formatter(self) -> OrderDisplayFormatter:
+        return self._display_formatter
 
     @asynccontextmanager
     async def _get_session(self) -> AsyncIterator[AsyncSession]:
@@ -43,7 +113,7 @@ class OrderService:
                 delivery_address=order_data.delivery_address,
                 order_note=order_data.order_note,
                 status=order_data.status,
-                products=products
+                products=products,
             )
 
             session.add(order)
@@ -69,3 +139,25 @@ class OrderService:
         async with self._get_session() as session:
             repo = self.db_manager.get_repo(OrderRepository, session)
             return await repo.update(order_id, update_data)
+
+    async def get_text_orders(self, orders: List[Order]) -> str:
+        return await self._display_formatter.get_text_orders(orders)
+
+    async def get_text_confirm_order(self, order: Order) -> str:
+        return await self._display_formatter.get_text_confirm_order(order)
+
+    async def get_text_for_confirm(
+        self,
+        items: List[ShopCardContent],
+        total_price: float,
+        address: str,
+        order_note: Optional[str] = "Не указан",
+    ) -> str:
+        items_text = await self._display_formatter.get_items_text(items)
+
+        return await self._display_formatter.get_text_for_confirm(
+            items_text, total_price, address, order_note
+        )
+
+    async def get_text_order_price(self, price: float) -> str:
+        return await self._display_formatter.get_text_order_price(price)
