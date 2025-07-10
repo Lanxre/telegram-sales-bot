@@ -128,8 +128,12 @@ async def process_user_message(
 async def show_appeals(message: Message, dialog_service: DialogService):
     try:
         not_read_dialogs = await dialog_service.not_read_dialogs(message.from_user.id)
-        keyboard = get_apeals_keyboard(not_read_dialogs)
-        await message.answer("Все поступившие обращения", reply_markup=keyboard)
+
+        if not_read_dialogs:
+            keyboard = get_apeals_keyboard(not_read_dialogs)
+            await message.answer("Все поступившие обращения", reply_markup=keyboard)
+        
+        await message.answer("Новых обращений не поступило!")
 
     except Exception:
         await message.answer("❌ Не удалось загрузить сообщения.")
@@ -156,7 +160,7 @@ async def show_select_apeals(callback: CallbackQuery, dialog_service: DialogServ
 async def answer_apeals_tag(callback: CallbackQuery, state: FSMContext):
     dialog_id = int(callback.data.split("_")[-1])
     await callback.message.answer("Ожидается ответ пользователю")
-    await state.set_data(data={"dialog_id": dialog_id})
+    await state.update_data(dialog_id= dialog_id)
     await state.set_state(DialogStates.waiting_for_answer_apeals)
     await callback.answer()
 
