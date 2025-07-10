@@ -12,66 +12,66 @@ A Telegram bot for managing an online shop, built with Python and the following 
 
 The bot supports the following commands:
 
-<p align="center">
+<div align="center">
 
-<table>
+<table style="border-collapse: collapse; width: 80%; max-width: 800px; margin: 20px auto; font-family: Arial, sans-serif;">
   <thead>
-    <tr>
-      <th>Command</th>
-      <th>Description</th>
-      <th>Access</th>
+    <tr style="background-color: #f5f5f5;">
+      <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Command</th>
+      <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Description</th>
+      <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Access</th>
     </tr>
   </thead>
   <tbody>
-    <tr>
-      <td><code>/start</code></td>
-      <td>Start message to initiate interaction with the bot</td>
-      <td><span style="background-color: #e1f5fe; color: #0277bd; padding: 2px 6px; border-radius: 4px; font-size: 0.9em;">All users</span></td>
+    <tr style="border-bottom: 1px solid #ddd;">
+      <td style="padding: 12px;"><code>/start</code></td>
+      <td style="padding: 12px;">Start message to initiate interaction with the bot</td>
+      <td style="padding: 12px;"><span style="background-color: #e1f5fe; color: #0277bd; padding: 4px 8px; border-radius: 4px; font-size: 0.9em; display: inline-block;">All users</span></td>
+    </tr>
+    <tr style="border-bottom: 1px solid #ddd;">
+      <td style="padding: 12px;"><code>/help</code></td>
+      <td style="padding: 12px;">List of all available bot commands</td>
+      <td style="padding: 12px;"><span style="background-color: #e1f5fe; color: #0277bd; padding: 4px 8px; border-radius: 4px; font-size: 0.9em; display: inline-block;">All users</span></td>
+    </tr>
+    <tr style="border-bottom: 1px solid #ddd;">
+      <td style="padding: 12px;"><code>/catalog</code></td>
+      <td style="padding: 12px;">Displays the catalog of products for sale</td>
+      <td style="padding: 12px;"><span style="background-color: #e1f5fe; color: #0277bd; padding: 4px 8px; border-radius: 4px; font-size: 0.9em; display: inline-block;">All users</span></td>
+    </tr>
+    <tr style="border-bottom: 1px solid #ddd;">
+      <td style="padding: 12px;"><code>/startdialog</code></td>
+      <td style="padding: 12px;">Starts a support dialog for user inquiries</td>
+      <td style="padding: 12px;"><span style="background-color: #e1f5fe; color: #0277bd; padding: 4px 8px; border-radius: 4px; font-size: 0.9em; display: inline-block;">All users</span></td>
+    </tr>
+    <tr style="border-bottom: 1px solid #ddd;">
+      <td style="padding: 12px;"><code>/shopcard</code></td>
+      <td style="padding: 12px;">Shows the contents of the shopping cart</td>
+      <td style="padding: 12px;"><span style="background-color: #e1f5fe; color: #0277bd; padding: 4px 8px; border-radius: 4px; font-size: 0.9em; display: inline-block;">All users</span></td>
+    </tr>
+    <tr style="border-bottom: 1px solid #ddd;">
+      <td style="padding: 12px;"><code>/myorders</code></td>
+      <td style="padding: 12px;">Displays the user's order history</td>
+      <td style="padding: 12px;"><span style="background-color: #e1f5fe; color: #0277bd; padding: 4px 8px; border-radius: 4px; font-size: 0.9em; display: inline-block;">All users</span></td>
+    </tr>
+    <tr style="border-bottom: 1px solid #ddd;">
+      <td style="padding: 12px;"><code>/addproduct</code></td>
+      <td style="padding: 12px;">Adds a new product to the catalog</td>
+      <td style="padding: 12px;"><span style="background-color: #ffebee; color: #c62828; padding: 4px 8px; border-radius: 4px; font-size: 0.9em; display: inline-block;">Admins only</span></td>
+    </tr>
+    <tr style="border-bottom: 1px solid #ddd;">
+      <td style="padding: 12px;"><code>/clearcart</code></td>
+      <td style="padding: 12px;">Clears the shopping cart</td>
+      <td style="padding: 12px;"><span style="background-color: #e1f5fe; color: #0277bd; padding: 4px 8px; border-radius: 4px; font-size: 0.9em; display: inline-block;">All users</span></td>
     </tr>
     <tr>
-      <td><code>/help</code></td>
-      <td>List of all available bot commands</td>
-      <td><span style="background-color: #e1f5fe; color: #0277bd; padding: 2px 6px; border-radius: 4px; font-size: 0.9em;">All users</span></td>
-    </tr>
-    <tr>
-      <td><code>/catalog</code></td>
-      <td>Displays the catalog of products for sale</td>
-      <td><span style="background-color: #e1f5fe; color: #0277bd; padding: 2px 6px; border-radius: 4px; font-size: 0.9em;">All users</span></td>
-    </tr>
-    <tr>
-      <td><code>/startdialog</code></td>
-      <td>Starts a support dialog for user inquiries</td>
-      <td><span style="background-color: #e1f5fe; color: #0277bd; padding: 2px 6px; border-radius: 4px; font-size: 0.9em;">All users</span></td>
-    </tr>
-    <tr>
-      <td><code>/shopcard</code></td>
-      <td>Shows the contents of the shopping cart</td>
-      <td><span style="background-color: #e1f5fe; color: #0277bd; padding: 2px 6px; border-radius: 4px; font-size: 0.9em;">All users</span></td>
-    </tr>
-    <tr>
-      <td><code>/myorders</code></td>
-      <td>Displays the user's order history</td>
-      <td><span style="background-color: #e1f5fe; color: #0277bd; padding: 2px 6px; border-radius: 4px; font-size: 0.9em;">All users</span></td>
-    </tr>
-    <tr>
-      <td><code>/addproduct</code></td>
-      <td>Adds a new product to the catalog</td>
-      <td><span style="background-color: #ffebee; color: #c62828; padding: 2px 6px; border-radius: 4px; font-size: 0.9em;">Admins only</span></td>
-    </tr>
-    <tr>
-      <td><code>/clearcart</code></td>
-      <td>Clears the shopping cart</td>
-      <td><span style="background-color: #e1f5fe; color: #0277bd; padding: 2px 6px; border-radius: 4px; font-size: 0.9em;">All users</span></td>
-    </tr>
-    <tr>
-      <td><code>/showappeals</code></td>
-      <td>Views user support appeals</td>
-      <td><span style="background-color: #ffebee; color: #c62828; padding: 2px 6px; border-radius: 4px; font-size: 0.9em;">Admins only</span></td>
+      <td style="padding: 12px;"><code>/showappeals</code></td>
+      <td style="padding: 12px;">Views user support appeals</td>
+      <td style="padding: 12px;"><span style="background-color: #ffebee; color: #c62828; padding: 4px 8px; border-radius: 4px; font-size: 0.9em; display: inline-block;">Admins only</span></td>
     </tr>
   </tbody>
 </table>
 
-</p>
+</div>
 
 # Command Examples
 Below are example screenshots of the bot's command outputs:
