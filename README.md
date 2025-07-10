@@ -12,6 +12,8 @@ A Telegram bot for managing an online shop, built with Python and the following 
 
 The bot supports the following commands:
 
+<p align="center">
+
 | Command | Description | Access |
 | --- | --- | --- |
 | `/start` | Start message to initiate interaction with the bot | All users |
@@ -24,26 +26,28 @@ The bot supports the following commands:
 | `/clearcart` | Clears the shopping cart | All users |
 | `/showappeals` | Views user support appeals | Admins only |
 
+</p>
+
 # Command Examples
 Below are example screenshots of the bot's command outputs:
 
-- **/start**
-![start command](/assets/images/start.png)
+- **/start** <p align="center">
+![start command](/assets/images/start.png) </p>
 
-- **/help**
-![help command](/assets/images/help.png)
+- **/help** <p align="center">
+![help command](/assets/images/help.png) </p>
 
-- **/catalog**
-![catalog command](/assets/images/catalog.png)
+- **/catalog** <p align="center">
+![catalog command](/assets/images/catalog.png) </p>
 
-- **/startdialog**
-![startdialog command](/assets/images/startdialog.png)
+- **/startdialog** <p align="center">
+![startdialog command](/assets/images/startdialog.png) </p>
 
-- **/shopcard**
-![shopcard command](/assets/images/shopcard.png)
+- **/shopcard** <p align="center">
+![shopcard command](/assets/images/shopcard.png) </p>
 
-- **/myorders**
-![myorders command](/assets/images/myorders.png)
+- **/myorders** <p align="center">
+![myorders command](/assets/images/myorders.png) </p>
 
 
 ## Setup Instructions
