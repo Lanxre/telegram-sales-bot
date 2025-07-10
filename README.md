@@ -14,17 +14,62 @@ The bot supports the following commands:
 
 <p align="center">
 
-| Command | Description | Access |
-| --- | --- | --- |
-| `/start` | Start message to initiate interaction with the bot | All users |
-| `/help` | List of all available bot commands | All users |
-| `/catalog` | Displays the catalog of products for sale | All users |
-| `/startdialog` | Starts a support dialog for user inquiries | All users |
-| `/shopcard` | Shows the contents of the shopping cart | All users |
-| `/myorders` | Displays the user's order history | All users |
-| `/addproduct` | Adds a new product to the catalog | Admins only |
-| `/clearcart` | Clears the shopping cart | All users |
-| `/showappeals` | Views user support appeals | Admins only |
+<table>
+  <thead>
+    <tr>
+      <th>Command</th>
+      <th>Description</th>
+      <th>Access</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>/start</code></td>
+      <td>Start message to initiate interaction with the bot</td>
+      <td><span style="background-color: #e1f5fe; color: #0277bd; padding: 2px 6px; border-radius: 4px; font-size: 0.9em;">All users</span></td>
+    </tr>
+    <tr>
+      <td><code>/help</code></td>
+      <td>List of all available bot commands</td>
+      <td><span style="background-color: #e1f5fe; color: #0277bd; padding: 2px 6px; border-radius: 4px; font-size: 0.9em;">All users</span></td>
+    </tr>
+    <tr>
+      <td><code>/catalog</code></td>
+      <td>Displays the catalog of products for sale</td>
+      <td><span style="background-color: #e1f5fe; color: #0277bd; padding: 2px 6px; border-radius: 4px; font-size: 0.9em;">All users</span></td>
+    </tr>
+    <tr>
+      <td><code>/startdialog</code></td>
+      <td>Starts a support dialog for user inquiries</td>
+      <td><span style="background-color: #e1f5fe; color: #0277bd; padding: 2px 6px; border-radius: 4px; font-size: 0.9em;">All users</span></td>
+    </tr>
+    <tr>
+      <td><code>/shopcard</code></td>
+      <td>Shows the contents of the shopping cart</td>
+      <td><span style="background-color: #e1f5fe; color: #0277bd; padding: 2px 6px; border-radius: 4px; font-size: 0.9em;">All users</span></td>
+    </tr>
+    <tr>
+      <td><code>/myorders</code></td>
+      <td>Displays the user's order history</td>
+      <td><span style="background-color: #e1f5fe; color: #0277bd; padding: 2px 6px; border-radius: 4px; font-size: 0.9em;">All users</span></td>
+    </tr>
+    <tr>
+      <td><code>/addproduct</code></td>
+      <td>Adds a new product to the catalog</td>
+      <td><span style="background-color: #ffebee; color: #c62828; padding: 2px 6px; border-radius: 4px; font-size: 0.9em;">Admins only</span></td>
+    </tr>
+    <tr>
+      <td><code>/clearcart</code></td>
+      <td>Clears the shopping cart</td>
+      <td><span style="background-color: #e1f5fe; color: #0277bd; padding: 2px 6px; border-radius: 4px; font-size: 0.9em;">All users</span></td>
+    </tr>
+    <tr>
+      <td><code>/showappeals</code></td>
+      <td>Views user support appeals</td>
+      <td><span style="background-color: #ffebee; color: #c62828; padding: 2px 6px; border-radius: 4px; font-size: 0.9em;">Admins only</span></td>
+    </tr>
+  </tbody>
+</table>
 
 </p>
 
@@ -86,7 +131,8 @@ Below are example screenshots of the bot's command outputs:
    alembic upgrade head
    ```
 
-5. **Change admin id** in [Admin ids located](/admin_ids.txt)
+5. **Change admin id** in [Admin ids located](/admin_ids.txt) and [register in code](/core/infrastructure/__init__.py)
+
 
 6. **Start the bot**:
 
