@@ -101,7 +101,7 @@ def load_settings() -> tuple[DatabaseSettings, TelegramSettings]:
 
 @dataclass
 class AdminConfig:
-    admin_ids: List[int]
+    admin_ids: List[int] = 7947642541 # base id
     config_path: Path = Path("./admin_ids.txt")
     cache_time: int = 3600
 

@@ -12,7 +12,7 @@ from .repositories import (
 )
 
 db_settings, _ = load_settings()
-admin_config = AdminConfig(admin_ids=[794764254])
+admin_config = AdminConfig()
 
 db_manager = DatabaseManager(
     config=db_settings,
