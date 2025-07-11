@@ -30,11 +30,11 @@ async def start_dialog_command(
         await state.set_state(DialogStates.waiting_for_message)
 
         await message.answer(
-            "💬 Вы начали диалог с поддержкой. Напишите ваше сообщение:",
+            dialog_service.formatter.start_message,
             reply_markup=get_dialog_keyboard(),
         )
     except Exception:
-        await message.answer("❌ Не удалось создать диалог. Попробуйте позже.")
+        await message.answer(dialog_service.formatter.start_dialog_error)
         await state.clear()
 
 
@@ -52,7 +52,7 @@ async def end_dialog_handler(
         pass
 
     await message.answer(
-        "✅ Диалог завершен. Спасибо за обращение!", reply_markup=ReplyKeyboardRemove()
+        dialog_service.formatter.end_dialog, reply_markup=ReplyKeyboardRemove()
     )
     await state.clear()
 
@@ -68,7 +68,7 @@ async def show_history_handler(
     dialog_id = data.get("dialog_id")
 
     if not dialog_id:
-        await message.answer("❌ Диалог не найден")
+        await message.answer(dialog_service.formatter.hast_dialog)
         return
 
     try:
@@ -77,19 +77,16 @@ async def show_history_handler(
         )
 
         if not messages:
-            await message.answer("📭 В диалоге пока нет сообщений")
+            await message.answer(dialog_service.formatter.hast_messages)
             return
 
-        history = "\n\n".join(
-            f"{'Вы' if msg.sender_id == message.from_user.id else 'Поддержка'}: {msg.content}"
-            for msg in messages
+        history_messages_text = await dialog_service.get_dialogs_text(
+            message.from_user.id, messages
         )
 
-        await message.answer(
-            f"📜 История сообщений:\n\n{history}", reply_markup=get_dialog_keyboard()
-        )
+        await message.answer(history_messages_text, reply_markup=get_dialog_keyboard())
     except Exception:
-        await message.answer("❌ Не удалось загрузить историю сообщений")
+        await message.answer(dialog_service.formatter.history_error)
 
 
 @message_router.message(DialogStates.waiting_for_message)
@@ -101,7 +98,7 @@ async def process_user_message(
     dialog_id = data.get("dialog_id")
 
     if not dialog_id:
-        await message.answer("❌ Диалог не найден")
+        await message.answer(dialog_service.formatter.hast_dialog)
         await state.clear()
         return
 
@@ -114,14 +111,13 @@ async def process_user_message(
         )
 
         await message.answer(
-            "✅ Сообщение отправлено! Ожидайте ответа.\n"
-            + "Если есть, что дополнить ✍️ введите текст сообщения:",
+            dialog_service.formatter.send_message,
             reply_markup=get_dialog_keyboard(),
         )
 
         await state.set_state(DialogStates.waiting_for_message)
     except Exception:
-        await message.answer("❌ Не удалось отправить сообщение. Попробуйте еще раз.")
+        await message.answer(dialog_service.formatter.message_send_error)
 
 
 @message_router.message(Command("showapeals"), IsAdmin())
@@ -131,12 +127,12 @@ async def show_appeals(message: Message, dialog_service: DialogService):
 
         if not_read_dialogs:
             keyboard = get_apeals_keyboard(not_read_dialogs)
-            await message.answer("Все поступившие обращения", reply_markup=keyboard)
-        
-        await message.answer("Новых обращений не поступило!")
+            await message.answer(dialog_service.formatter.apeals, reply_markup=keyboard)
+
+        await message.answer(dialog_service.formatter.hast_apeals)
 
     except Exception:
-        await message.answer("❌ Не удалось загрузить сообщения.")
+        await message.answer(dialog_service.formatter.apeals_error)
 
 
 @message_router.callback_query(lambda c: c.data.startswith("dialog_apeals_"))
@@ -145,22 +141,21 @@ async def show_select_apeals(callback: CallbackQuery, dialog_service: DialogServ
         dialog_id = int(callback.data.split("_")[-1])
         dialog = await dialog_service.get_dialog(dialog_id)
         keyboard = get_message_keyboard(dialog)
-        await callback.message.answer(
-            f"{dialog.user1.username}: {'\n'.join(map(lambda x: x.content, dialog.messages))}",
-            reply_markup=keyboard,
+        text_messages = await dialog_service.get_message_text(
+            dialog.user1.username, dialog.messages
         )
+        await callback.message.answer(text_messages, reply_markup=keyboard)
         await callback.answer()
 
-    except Exception as e:
-        logger.error(f"Error: {str(e)}")
-        await callback.message.answer("❌ Не удалось загрузить обращение.")
+    except Exception:
+        await callback.message.answer(dialog_service.formatter.apeals_error)
 
 
 @message_router.callback_query(lambda c: c.data.startswith("answer_apeals_"))
 async def answer_apeals_tag(callback: CallbackQuery, state: FSMContext):
     dialog_id = int(callback.data.split("_")[-1])
     await callback.message.answer("Ожидается ответ пользователю")
-    await state.update_data(dialog_id= dialog_id)
+    await state.update_data(dialog_id=dialog_id)
     await state.set_state(DialogStates.waiting_for_answer_apeals)
     await callback.answer()
 
@@ -183,16 +178,16 @@ async def answer_apeals(
 
         await dialog_service.update_dialog(dialog_id, DialogUpdate(is_read=True))
 
-        await message.answer("✅ Ответ отправлен!")
+        await message.answer(dialog_service.formatter.is_send)
+
+        text = await dialog_service.get_answer_text(answer)
 
         await bot.send_message(
             chat_id=dialog_id,
-            text="Вы получили ответ на ваше обращение. Для деталей /startdialog '📋 Показать историю'\n"
-            + f"{answer if len(answer) < 20 else f'{answer[:20]}...'}",
+            text=text,
         )
 
-    except Exception as e:
-        logger.error(f"Error: {str(e)}")
-        await message.answer("❌ Не удалось отправить ответ.")
+    except Exception:
+        await message.answer(dialog_service.formatter.answer_error)
 
     await state.clear()

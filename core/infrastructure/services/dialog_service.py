@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+from dataclasses import dataclass
 from typing import AsyncIterator, List, Optional
 
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
@@ -14,14 +15,62 @@ from logger import LoggerBuilder
 logger = LoggerBuilder("Dialog - Service").add_stream_handler().build()
 
 
+@dataclass(frozen=True)
+class DialogDisplayFormatter:
+    start_message: str = "💬 Вы начали диалог с поддержкой. Напишите ваше сообщение:"
+    end_dialog: str = "✅ Диалог завершен. Спасибо за обращение!"
+
+    send_message: str = (
+        "✅ Сообщение отправлено! Ожидайте ответа.\n"
+        + "Если есть, что дополнить ✍️ введите текст сообщения:",
+    )
+    is_send: str = "✅ Ответ отправлен!"
+
+    hast_messages: str = "📭 В диалоге пока нет сообщений"
+    hast_dialog: str = "❌ Диалог не найден"
+
+    start_dialog_error: str = "❌ Не удалось создать диалог. Попробуйте позже."
+    history_error: str = "❌ Не удалось загрузить историю сообщений"
+    message_send_error: str = "❌ Не удалось отправить сообщение. Попробуйте еще раз."
+    apeals_error: str = "❌ Не удалось загрузить обращения."
+    answer_error: str = "❌ Не удалось отправить ответ."
+
+    apeals: str = "Все поступившие обращения"
+    hast_apeals: str = "Новых обращений не поступило!"
+
+    async def get_dialogs_text(self, user_id: int, messages: List[Message]) -> str:
+        history = "\n\n".join(
+            f"{'Вы' if msg.sender_id == user_id else 'Поддержка'}: {msg.content}"
+            for msg in messages
+        )
+
+        return history
+
+    async def get_message_text(self, username: str, messages: List[Message]) -> str:
+        res = f"{username}: {'\n'.join(map(lambda x: x.content, messages))}"
+        return res
+
+    async def get_answer_text(self, answer: str) -> str:
+        res = (
+            "Вы получили ответ на ваше обращение. Для деталей /startdialog '📋 Показать историю'\n"
+            + f"{answer if len(answer) < 20 else f'{answer[:20]}...'}"
+        )
+        return res
+
+
 class DialogService:
     def __init__(self, db_manager: DatabaseManager, admin_config: AdminConfig):
         self._db_manager = db_manager
         self._admin_config = admin_config
+        self._formatter = DialogDisplayFormatter()
 
     @property
     def db_manager(self) -> DatabaseManager:
         return self._db_manager
+
+    @property
+    def formatter(self) -> DialogDisplayFormatter:
+        return self._formatter
 
     @asynccontextmanager
     async def _get_session(self) -> AsyncIterator[AsyncSession]:
@@ -215,12 +264,24 @@ class DialogService:
             except Exception as e:
                 logger.error(f"Error finding available admin: {e}")
 
-    async def not_read_dialogs(self, admin_id: int, limit: Optional[int] = 10, offset: Optional[int] = 0) -> List[Dialog]:
+    async def not_read_dialogs(
+        self, admin_id: int, limit: Optional[int] = 10, offset: Optional[int] = 0
+    ) -> List[Dialog]:
         async with self.db_manager.get_db_session() as session:
             dialog_repo = self.db_manager.get_repo(DialogRepository, session)
             return await dialog_repo.get_unread_dialogs(admin_id, limit, offset)
-    
+
     async def get_dialog(self, dialog_id: int) -> Dialog:
         async with self._get_session() as session:
             dialog_repo = self.db_manager.get_repo(DialogRepository, session)
             return await dialog_repo.get(dialog_id)
+
+    async def get_dialogs_text(self, user_id: int, messages: List[Message]) -> str:
+        history = await self._formatter.get_dialogs_text(user_id, messages)
+        return f"📜 История сообщений:\n\n{history}"
+
+    async def get_message_text(self, username: str, messages: List[Message]) -> str:
+        return await self._formatter.get_message_text(username, messages)
+
+    async def get_answer_text(self, answer: str) -> str:
+        return await self._formatter.get_answer_text(answer)
