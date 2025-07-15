@@ -1,5 +1,5 @@
 from .caption import DeleteCaptionArgs, ErrorCaptionArg, ProductCaptionArgs
-from .shop_card import ShopCardContent, ShopCardTotal
+from .shop_card import ShopCardContent, ShopCardTotal, CartCallbackData
 
 __all__ = [
     "ShopCardContent",
@@ -7,4 +7,5 @@ __all__ = [
     "ErrorCaptionArg",
     "ProductCaptionArgs",
     "DeleteCaptionArgs",
+    "CartCallbackData"
 ]
