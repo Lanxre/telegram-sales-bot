@@ -5,10 +5,10 @@ from aiogram.types import CallbackQuery, Message, ReplyKeyboardRemove
 
 from core.infrastructure.services import DialogService
 from core.internal.models import DialogUpdate
+from core.internal.enums import ButtonText, CallbackPrefixes
 from filters import IsAdmin
 from keyboards import get_apeals_keyboard, get_dialog_keyboard, get_message_keyboard
 from logger import LoggerBuilder
-
 from states import DialogStates
 
 logger = LoggerBuilder("MessageRouter").add_stream_handler().build()
@@ -39,7 +39,7 @@ async def start_dialog_command(
 
 
 @message_router.message(
-    DialogStates.waiting_for_message, F.text == "📝 Завершить диалог"
+    DialogStates.waiting_for_message, F.text == ButtonText.FINISH_DIALOG.value
 )
 async def end_dialog_handler(
     message: Message, state: FSMContext, dialog_service: DialogService
@@ -135,10 +135,10 @@ async def show_appeals(message: Message, dialog_service: DialogService):
         await message.answer(dialog_service.formatter.apeals_error)
 
 
-@message_router.callback_query(lambda c: c.data.startswith("dialog_apeals_"))
+@message_router.callback_query(lambda c: CallbackPrefixes.has_prefix(c.data, CallbackPrefixes.DIALOG_APPEALS))
 async def show_select_apeals(callback: CallbackQuery, dialog_service: DialogService):
     try:
-        dialog_id = int(callback.data.split("_")[-1])
+        dialog_id = CallbackPrefixes.last_index_after_prefix(callback.data, CallbackPrefixes.DIALOG_APPEALS)
         dialog = await dialog_service.get_dialog(dialog_id)
         keyboard = get_message_keyboard(dialog)
         text_messages = await dialog_service.get_message_text(
@@ -151,9 +151,9 @@ async def show_select_apeals(callback: CallbackQuery, dialog_service: DialogServ
         await callback.message.answer(dialog_service.formatter.apeals_error)
 
 
-@message_router.callback_query(lambda c: c.data.startswith("answer_apeals_"))
+@message_router.callback_query(lambda c: CallbackPrefixes.has_prefix(c.data, CallbackPrefixes.ANSWER_APPEALS))
 async def answer_apeals_tag(callback: CallbackQuery, state: FSMContext):
-    dialog_id = int(callback.data.split("_")[-1])
+    dialog_id = CallbackPrefixes.last_index_after_prefix(callback.data, CallbackPrefixes.ANSWER_APPEALS)
     await callback.message.answer("Ожидается ответ пользователю")
     await state.update_data(dialog_id=dialog_id)
     await state.set_state(DialogStates.waiting_for_answer_apeals)

@@ -8,19 +8,21 @@ from core.infrastructure.services import (
     ErrorCaptionArg,
     ProductCaptionArgs,
 )
+from core.internal.enums import CallbackPrefixes
 from core.internal.models import ProductUpdate
-from utils import ImageSelector
-
 from states import EditProduct
+from utils import ImageSelector
 
 product_edit_router = Router()
 
 
-@product_edit_router.callback_query(lambda c: c.data.startswith("edit_name_"))
+@product_edit_router.callback_query(lambda c: CallbackPrefixes.has_prefix(c.data, CallbackPrefixes.PRODUCT_EDIT_NAME))
 async def proccess_edit_name(
     callback: CallbackQuery, state: FSMContext, catalog_service: CatalogService
 ):
-    product_id = int(callback.data.split("_")[-1])
+    product_id = CallbackPrefixes.last_index_after_prefix(
+        callback.data, CallbackPrefixes.PRODUCT_EDIT_NAME
+    )
     await callback.message.answer(catalog_service.config.edit_name_prompt)
     await state.update_data(product_id=product_id)
     await state.set_state(EditProduct.waiting_for_name)
@@ -63,11 +65,13 @@ async def process_edit_name(
     await state.clear()
 
 
-@product_edit_router.callback_query(lambda c: c.data.startswith("edit_desc_"))
+@product_edit_router.callback_query(lambda c: CallbackPrefixes.has_prefix(c.data, CallbackPrefixes.PRODUCT_EDIT_DESCRIPTION))
 async def proccess_edit_descriprion(
     callback: CallbackQuery, state: FSMContext, catalog_service: CatalogService
 ):
-    product_id = int(callback.data.split("_")[-1])
+    product_id = CallbackPrefixes.last_index_after_prefix(
+        callback.data, CallbackPrefixes.PRODUCT_EDIT_DESCRIPTION
+    )
     await callback.message.answer(catalog_service.config.edit_description_prompt)
     await state.update_data(product_id=product_id)
     await state.set_state(EditProduct.waiting_for_description)
@@ -109,11 +113,13 @@ async def process_edit_description(
     await state.clear()
 
 
-@product_edit_router.callback_query(lambda c: c.data.startswith("edit_price_"))
+@product_edit_router.callback_query(lambda c: CallbackPrefixes.has_prefix(c.data, CallbackPrefixes.PRODUCT_EDIT_PRICE))
 async def proccess_edit_price(
     callback: CallbackQuery, state: FSMContext, catalog_service: CatalogService
 ):
-    product_id = int(callback.data.split("_")[-1])
+    product_id = CallbackPrefixes.last_index_after_prefix(
+        callback.data, CallbackPrefixes.PRODUCT_EDIT_PRICE
+    )
     await callback.message.answer(catalog_service.config.edit_price_prompt)
     await state.update_data(product_id=product_id)
     await state.set_state(EditProduct.waiting_for_price)
@@ -161,11 +167,13 @@ async def process_edit_price(
     await state.clear()
 
 
-@product_edit_router.callback_query(lambda c: c.data.startswith("edit_image_"))
+@product_edit_router.callback_query(lambda c: CallbackPrefixes.has_prefix(c.data, CallbackPrefixes.PRODUCT_EDIT_IMAGE))
 async def proccess_edit_image(
     callback: CallbackQuery, state: FSMContext, catalog_service: CatalogService
 ):
-    product_id = int(callback.data.split("_")[-1])
+    product_id = CallbackPrefixes.last_index_after_prefix(
+        callback.data, CallbackPrefixes.PRODUCT_EDIT_IMAGE
+    )
     await callback.message.answer(catalog_service.config.edit_image_prompt)
     await state.update_data(product_id=product_id)
     await state.set_state(EditProduct.waiting_for_image)

@@ -8,7 +8,7 @@ from aiogram.types import (
 )
 
 from core.infrastructure.services import OrderService, ShopCardService
-from core.internal.enums import OrderStatus
+from core.internal.enums import OrderStatus, CallbackqueryText
 from core.internal.models import OrderCreate
 from filters import TextFilter
 from keyboards import get_order_confirm_keyboard
@@ -20,7 +20,7 @@ logger = LoggerBuilder("OrderRouter").add_stream_handler().build()
 order_router = Router()
 
 
-@order_router.callback_query(F.data == "order_confirm")
+@order_router.callback_query(F.data == CallbackqueryText.ORDER_CONFIRM.value)
 async def start_order_process(
     callback: CallbackQuery,
     state: FSMContext,
@@ -111,7 +111,7 @@ async def process_delivery_address(
         await state.clear()
 
 
-@order_router.callback_query(F.data == "final_confirm")
+@order_router.callback_query(F.data == CallbackqueryText.ORDER_FINAL_CONFIRM.value)
 async def final_order_confirmation(
     callback: CallbackQuery,
     state: FSMContext,
@@ -148,7 +148,7 @@ async def final_order_confirmation(
         await state.clear()
 
 
-@order_router.callback_query(F.data == "order_cancel")
+@order_router.callback_query(F.data == CallbackqueryText.ORDER_CANSEL.value)
 async def cancel_order_process(callback: CallbackQuery, state: FSMContext):
     await state.clear()
     await callback.message.edit_text(

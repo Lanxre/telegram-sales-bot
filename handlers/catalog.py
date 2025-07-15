@@ -8,7 +8,7 @@ from core.infrastructure.services import (
     DeleteCaptionArgs,
     ProductCaptionArgs,
 )
-from core.internal.enums import CallbackAction
+from core.internal.enums import CallbackAction, CallbackPrefixes
 from keyboards import (
     get_catalog_keyboard,
     get_confirm_delete_keyboard,
@@ -51,7 +51,7 @@ async def command_catalog(
         await message.answer(catalog_service.config.error_text.format(error=str(e)))
 
 
-@catalog_router.callback_query(lambda c: c.data.startswith("catalog_"))
+@catalog_router.callback_query(lambda c: CallbackPrefixes.has_prefix(c.data, CallbackPrefixes.CATALOG_INIT))
 async def process_catalog_navigation(
     callback: CallbackQuery, bot: Bot, catalog_service: CatalogService, is_admin: bool
 ) -> None:

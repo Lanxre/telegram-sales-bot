@@ -6,6 +6,7 @@ from core.infrastructure.services import (
     ProductCaptionArgs,
     CatalogService,
 )
+from core.internal.enums import CallbackPrefixes
 from filters import IsAdmin
 from keyboards import (
     get_catalog_keyboard,
@@ -14,9 +15,9 @@ from keyboards import (
 product_delete_router = Router()
 
 
-@product_delete_router.callback_query(lambda c: c.data.startswith("confirm_delete_"))
+@product_delete_router.callback_query(lambda c: CallbackPrefixes.has_prefix(c.data, CallbackPrefixes.PRODUCT_DELETE))
 async def confirm_delete(callback: CallbackQuery, catalog_service: CatalogService):
-    product_id = int(callback.data.split("_")[-1])
+    product_id = CallbackPrefixes.last_index_after_prefix(callback.data, CallbackPrefixes.PRODUCT_DELETE)
     try:
         is_delete = await catalog_service.delete_product(product_id)
         if is_delete:
@@ -29,12 +30,12 @@ async def confirm_delete(callback: CallbackQuery, catalog_service: CatalogServic
         await callback.answer(catalog_service.config.error_text.format(error=str(e)))
 
 
-@product_delete_router.callback_query(lambda c: c.data.startswith("cancel_delete_"))
+@product_delete_router.callback_query(lambda c: CallbackPrefixes.has_prefix(c.data, CallbackPrefixes.PRODUCT_CANSEL_DELETE))
 async def cancel_delete(
     callback: CallbackQuery, bot: Bot, catalog_service: CatalogService
 ) -> None:
     try:
-        product_id = int(callback.data.split("_")[-1])
+        product_id = CallbackPrefixes.last_index_after_prefix(callback.data, CallbackPrefixes.PRODUCT_CANSEL_DELETE)
         products = await catalog_service.get_products()
 
         if not products:
