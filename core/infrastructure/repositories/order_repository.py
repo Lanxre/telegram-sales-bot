@@ -1,5 +1,5 @@
-from typing import Optional, List
-from sqlalchemy import select
+from typing import Optional, List, Dict, Any
+from sqlalchemy import select, text
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,6 +12,27 @@ from .abstract_repository import SQLAlchemyRepository
 class OrderRepository(SQLAlchemyRepository[Order, OrderCreate, OrderUpdate]):
     def __init__(self, session: AsyncSession):
         super().__init__(model=Order, session=session)
+
+    async def get_all_orders_with_products(
+        self,
+        *,
+        skip: int = 0,
+        limit: int = 100,
+        filters: Optional[Dict[str, Any]] = None,
+        order_by: Optional[str] = None,
+    ) -> List[Order]:
+        query = select(Order)
+
+        if filters:
+            query = self._apply_filters(query, filters)
+
+        if order_by:
+            query = query.order_by(text(order_by))
+
+        query = query.offset(skip).limit(limit).options(selectinload(Order.products), selectinload(Order.user))
+
+        result = await self.session.execute(query)
+        return result.scalars().all()
 
     async def get_with_products(self, order_id: int) -> Optional[Order]:
         query = (

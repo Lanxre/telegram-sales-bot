@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
-from typing import AsyncIterator, List, Optional
+from typing import Any, AsyncIterator, Dict, List, Optional
 
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -28,6 +28,8 @@ class OrderDisplayFormatter:
     input_address: str = (
         "🏠 Теперь введите адрес доставки:\n(Укажите город, улицу, дом и квартиру)"
     )
+
+    order_received = "Поступившие заказы на обработку:"
 
     async def get_text_confirm_order(self, order: Order) -> str:
         return (
@@ -129,6 +131,17 @@ class OrderService:
         async with self._get_session() as session:
             repo = self.db_manager.get_repo(OrderRepository, session)
             return await repo.get_by_user(user_id)
+
+    async def get_orders(
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        filters: Optional[Dict[str, Any]] = None,
+        order_by: Optional[str] = None,
+    ) -> List[Order]:
+        async with self._get_session() as session:
+            repo = self.db_manager.get_repo(OrderRepository, session)
+            return await repo.get_all_orders_with_products(skip=skip, limit=limit, filters=filters, order_by=order_by)
 
     async def cancel_order(self, order_id: int) -> bool:
         await self.update_order(order_id, OrderUpdate(status=OrderStatus.PENDING))
