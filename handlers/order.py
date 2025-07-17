@@ -8,12 +8,15 @@ from aiogram.types import (
 )
 
 from core.infrastructure.services import OrderService, ShopCardService
-from core.internal.enums import OrderStatus, CallbackqueryText
+from core.internal.enums import CallbackPrefixes, CallbackqueryText, OrderStatus
 from core.internal.models import OrderCreate
-from filters import TextFilter
+from core.internal.types import PaginationData
+from filters import IsAdmin, TextFilter
 from keyboards import get_order_confirm_keyboard
 from logger import LoggerBuilder
 from states import OrderConfirm
+
+from .pagination import create_pagination
 
 logger = LoggerBuilder("OrderRouter").add_stream_handler().build()
 
@@ -166,3 +169,71 @@ async def show_user_orders(message: Message, order_service: OrderService):
 
     text_orders = await order_service.get_text_orders(orders)
     await message.answer(text_orders)
+
+
+@order_router.message(Command("receivedorders"), IsAdmin())
+async def get_received_orders(message: Message, order_service: OrderService):
+    orders = await order_service.get_orders()
+    pagination_data = PaginationData(
+        text="Поступившие заказы на обработку:",
+        callback_name=CallbackqueryText.ORDER_RECEIVED.value,
+        page=0,
+        page_size=3,
+        items=orders,
+    )
+    await create_pagination(message, pagination_data)
+
+
+@order_router.callback_query(
+    lambda c: CallbackPrefixes.has_prefix(c.data, CallbackPrefixes.ORDER_RECEIVED_NEXT)
+)
+async def get_next_received_orders(
+    callback: CallbackQuery,
+    order_service: OrderService,
+):
+    page_size, current_page = CallbackPrefixes.extract_numbers_after_prefix(
+        callback.data, CallbackPrefixes.ORDER_RECEIVED_NEXT
+    )
+   
+    orders = await order_service.get_orders(
+        skip=(current_page + page_size)
+        if page_size % 2 == 0
+        else (current_page + page_size) - 1,
+        limit=page_size,
+    )
+
+    pagination_data = PaginationData(
+        text=order_service.formatter.order_received,
+        callback_name=CallbackqueryText.ORDER_RECEIVED.value,
+        page=current_page,
+        page_size=page_size,
+        items=orders,
+    )
+
+    await create_pagination(callback, pagination_data)
+
+
+@order_router.callback_query(
+    lambda c: CallbackPrefixes.has_prefix(c.data, CallbackPrefixes.ORDER_RECEIVED_PREV)
+)
+async def get_prev_received_orders(
+    callback: CallbackQuery,
+    order_service: OrderService,
+):
+    page_size, current_page = CallbackPrefixes.extract_numbers_after_prefix(
+        callback.data, CallbackPrefixes.ORDER_RECEIVED_PREV
+    )
+
+    orders = await order_service.get_orders(
+        skip=(current_page - 1) * page_size, limit=page_size
+    )
+
+    pagination_data = PaginationData(
+        text=order_service.formatter.order_received,
+        callback_name=CallbackqueryText.ORDER_RECEIVED.value,
+        page=current_page,
+        page_size=page_size,
+        items=orders,
+    )
+
+    await create_pagination(callback, pagination_data)
