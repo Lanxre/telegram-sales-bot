@@ -9,6 +9,7 @@ class CallbackqueryText(str, Enum):
     ORDER_CONFIRM = "order_confirm"
     ORDER_FINAL_CONFIRM = "final_confirm"
     ORDER_CANSEL = "order_cancel"
+    ORDER_RECEIVED = "received_orders"
 
 
 class CallbackPrefixes(str, Enum):
@@ -31,6 +32,10 @@ class CallbackPrefixes(str, Enum):
     SHOPCARD_ITEM_PREV = "shopcard_item_prev_"
     SHOPCARD_ITEM_NEXT = "shopcard_item_next_"
 
+    ORDER_RECEIVED = "received_orders_"
+    ORDER_RECEIVED_NEXT = "received_orders_next_"
+    ORDER_RECEIVED_PREV = "received_orders_prev_"
+
     @classmethod
     def has_any_prefix(cls, callback_data: str) -> bool:
         return any(callback_data.startswith(item.value) for item in cls)
@@ -42,7 +47,6 @@ class CallbackPrefixes(str, Enum):
     @staticmethod
     def extract_numbers_after_prefix(callback_data: str, prefix: str) -> list[int]:
         if not callback_data.startswith(prefix):
-            print(1)
             return []
 
         parts = callback_data[len(prefix) :].split("_")
