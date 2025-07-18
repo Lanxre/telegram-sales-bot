@@ -14,7 +14,7 @@ async def create_pagination(
 ) -> None:
     
     if not len(pagination_data.items):
-        await message.answer("Элементов больше нет!", show_alert=True)
+        await message.answer("Заказов больше нет!", show_alert=True)
         return
     
     text = await _generate_text_pagination(
