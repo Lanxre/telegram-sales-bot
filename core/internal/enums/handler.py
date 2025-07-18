@@ -35,6 +35,8 @@ class CallbackPrefixes(str, Enum):
     ORDER_RECEIVED = "received_orders_"
     ORDER_RECEIVED_NEXT = "received_orders_next_"
     ORDER_RECEIVED_PREV = "received_orders_prev_"
+    ORDER_STATUS_CONFIRM = "received_order_confirm_"
+    ORDER_STATUS_CANSEL = "received_order_cansel_"
 
     @classmethod
     def has_any_prefix(cls, callback_data: str) -> bool:
