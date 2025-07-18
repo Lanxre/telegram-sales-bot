@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -35,7 +35,7 @@ class OrderCreate(BaseModel):
     total_count: int
     order_note: Optional[str] = None
     delivery_address: Optional[str] = None
-    products: Optional[List[ProductItem]] = None
+    products: Optional[List[Tuple[ProductItem, int]]] = None
     status: Optional[OrderStatus] = None
 
 
