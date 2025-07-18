@@ -74,7 +74,7 @@ The bot supports the following commands:
       <td style="padding: 12px;"><span style="background-color: #ffebee; color: #c62828; padding: 4px 8px; border-radius: 4px; font-size: 0.9em; display: inline-block;">Admins only</span></td>
     </tr>
     <tr>
-      <td style="padding: 12px;"><code>/receivedorders</code></td>
+      <td style="padding: 12px;"><code>/delivereddorders</code></td>
       <td style="padding: 12px;">Views delivered orders</td>
       <td style="padding: 12px;"><span style="background-color: #ffebee; color: #c62828; padding: 4px 8px; border-radius: 4px; font-size: 0.9em; display: inline-block;">Admins only</span></td>
     </tr>
