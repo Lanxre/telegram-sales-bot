@@ -12,7 +12,7 @@ from core.internal.enums import CallbackPrefixes, CallbackqueryText, OrderStatus
 from core.internal.models import OrderCreate
 from core.internal.types import PaginationData
 from filters import IsAdmin, TextFilter
-from keyboards import get_order_confirm_keyboard
+from keyboards import get_order_confirm_keyboard, get_status_order_keyboard
 from logger import LoggerBuilder
 from states import OrderConfirm
 
@@ -126,14 +126,16 @@ async def final_order_confirmation(
         card_contents_total = await shop_card_service.get_card_total(
             callback.from_user.id
         )
-
         order = await order_service.create_order(
             OrderCreate(
                 user_id=callback.from_user.id,
                 total_count=card_contents_total.items_count,
                 total_price=card_contents_total.total_price,
                 status=OrderStatus.PENDING.value,
-                products=[card_item.product for card_item in card_contents_total.items],
+                products=[
+                    (card_item.product, card_item.quantity)
+                    for card_item in card_contents_total.items
+                ],
                 delivery_address=state_data.get("delivery_address"),
                 order_note=state_data.get("order_note"),
             )
@@ -142,7 +144,8 @@ async def final_order_confirmation(
         if order:
             await shop_card_service.clear_card(callback.from_user.id)
 
-        await callback.message.edit_text(order_service.get_text_confirm_order(order))
+        text = await order_service.get_text_confirm_order(order)
+        await callback.message.edit_text(text)
 
         await state.clear()
 
@@ -173,7 +176,8 @@ async def show_user_orders(message: Message, order_service: OrderService):
 
 @order_router.message(Command("receivedorders"), IsAdmin())
 async def get_received_orders(message: Message, order_service: OrderService):
-    orders = await order_service.get_orders()
+    orders = await order_service.get_orders(filters={"status" : f"{OrderStatus.PENDING.value}"})
+
     pagination_data = PaginationData(
         text="Поступившие заказы на обработку:",
         callback_name=CallbackqueryText.ORDER_RECEIVED.value,
@@ -194,7 +198,7 @@ async def get_next_received_orders(
     page_size, current_page = CallbackPrefixes.extract_numbers_after_prefix(
         callback.data, CallbackPrefixes.ORDER_RECEIVED_NEXT
     )
-   
+
     orders = await order_service.get_orders(
         skip=(current_page + page_size)
         if page_size % 2 == 0
@@ -237,3 +241,58 @@ async def get_prev_received_orders(
     )
 
     await create_pagination(callback, pagination_data)
+
+
+@order_router.callback_query(
+    lambda c: CallbackPrefixes.has_prefix(c.data, CallbackPrefixes.ORDER_RECEIVED)
+)
+async def show_order_text(
+    callback: CallbackQuery,
+    order_service: OrderService,
+):
+    order_id = CallbackPrefixes.last_index_after_prefix(
+        callback.data, CallbackPrefixes.ORDER_RECEIVED
+    )
+    order = await order_service.get_order(order_id)
+    text = await order_service.get_text_order(order)
+    keyboard = get_status_order_keyboard(order.id)
+    await callback.message.answer(text, reply_markup=keyboard)
+    await callback.answer()
+
+
+@order_router.callback_query(lambda c: CallbackPrefixes.has_prefix(c.data, CallbackPrefixes.ORDER_STATUS_CONFIRM))
+async def order_status_confirm(
+    callback: CallbackQuery,
+    order_service: OrderService,
+) -> None:
+    order_id = CallbackPrefixes.last_index_after_prefix(
+        callback.data, CallbackPrefixes.ORDER_STATUS_CONFIRM
+    )
+    await order_service.update_order_status(order_id, OrderStatus.DELIVERED)
+    await callback.answer(order_service.formatter.order_status_change, show_alert=True)
+
+
+@order_router.callback_query(lambda c: CallbackPrefixes.has_prefix(c.data, CallbackPrefixes.ORDER_STATUS_CANSEL))
+async def order_status_cansel(
+    callback: CallbackQuery,
+    order_service: OrderService,
+) -> None:
+    order_id = CallbackPrefixes.last_index_after_prefix(
+        callback.data, CallbackPrefixes.ORDER_STATUS_CANSEL
+    )
+    await order_service.update_order_status(order_id, OrderStatus.CANCELLED)
+    await callback.answer(order_service.formatter.order_status_change, show_alert=True)
+
+
+@order_router.message(Command("delivereddorders"), IsAdmin())
+async def get_confirm_orders(message: Message, order_service: OrderService):
+    orders = await order_service.get_orders(filters={"status" : f"{OrderStatus.DELIVERED.value}"})
+
+    pagination_data = PaginationData(
+        text="Доставленные заказы:",
+        callback_name=CallbackqueryText.ORDER_RECEIVED.value,
+        page=0,
+        page_size=3,
+        items=orders,
+    )
+    await create_pagination(message, pagination_data)
