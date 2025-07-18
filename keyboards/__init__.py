@@ -8,7 +8,11 @@ from .message_keyboard import (
     get_dialog_keyboard,
     get_message_keyboard,
 )
-from .order_keyboard import get_confirm_keyboard, get_order_confirm_keyboard
+from .order_keyboard import (
+    get_confirm_keyboard,
+    get_order_confirm_keyboard,
+    get_status_order_keyboard,
+)
 from .shop_card_keyboard import get_shop_card_keyboard
 
 __all__ = [
@@ -21,4 +25,5 @@ __all__ = [
     "get_shop_card_keyboard",
     "get_confirm_keyboard",
     "get_order_confirm_keyboard",
+    "get_status_order_keyboard",
 ]
