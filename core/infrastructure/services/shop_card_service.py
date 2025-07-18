@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+from functools import reduce
 from typing import AsyncIterator, List, Optional
 
 from sqlalchemy.exc import SQLAlchemyError
@@ -8,10 +9,10 @@ from core.infrastructure.database import DatabaseManager
 from core.infrastructure.database.models import ShopCard, ShopCardItem
 from core.infrastructure.repositories import ShopCardItemRepository, ShopCardRepository
 from core.internal.models import (
+    ProductItem,
     ShopCardCreate,
     ShopCardItemCreate,
     ShopCardItemUpdate,
-    ProductItem,
 )
 from core.internal.types import ShopCardContent, ShopCardTotal
 from logger import LoggerBuilder
@@ -215,7 +216,7 @@ class ShopCardService:
         total = sum(item.total for item in contents)
 
         return ShopCardTotal(
-            items_count=len(contents), 
+            items_count=reduce(lambda x, y: x.quantity + y.quantity, contents), 
             total_price=total, 
             items=contents
         )
