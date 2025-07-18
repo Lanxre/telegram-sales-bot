@@ -59,6 +59,7 @@ class ProductOrder(BaseModel):
     order_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("Order.id"), primary_key=True
     )
+    product_quantity: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
 
     # Relationships
     product: Mapped["Product"] = relationship(
