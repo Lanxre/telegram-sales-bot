@@ -30,6 +30,7 @@ class OrderDisplayFormatter:
     )
 
     order_received = "Поступившие заказы на обработку:"
+    order_status_change = "Статус заказа изменён"
 
     async def get_text_confirm_order(self, order: Order) -> str:
         return (
@@ -80,6 +81,25 @@ class OrderDisplayFormatter:
             "Или нажмите /skip чтобы пропустить"
         )
 
+    async def get_text_order(self, order: Order) -> str:
+        product_text = StringBuilder()
+        for product_order, product in zip(order.order_products, order.products):
+            product_text.append("\n")
+            product_text.append(
+                f"{product.name} - {product.price} × {product_order.product_quantity} = {product.price * product_order.product_quantity}$"
+            )
+
+        return (
+            f"✅ Заказ #{order.id} !\n\n"
+            f"Пользователь @{order.user.username}\n"
+            f"📦 Статус: {order.status.value}\n"
+            f"💳 Сумма: {order.total_price} $\n"
+            f"🏠 Адрес: {order.delivery_address or 'не указан'}\n"
+            f"📝 Комментарий: {order.order_note if order.order_note else 'не оставлен'}\n\n"
+            f"🛒 Предметы: \n{product_text}\n"
+            f"Общее кол-во: {order.total_count}"
+        )
+
 
 class OrderService:
     def __init__(self, db_manager: DatabaseManager):
@@ -107,7 +127,7 @@ class OrderService:
     async def create_order(self, order_data: OrderCreate) -> Order:
         async with self._get_session() as session:
             product_repo = self.db_manager.get_repo(ProductRepository, session)
-            products = [await product_repo.get(p.id) for p in order_data.products]
+            products = [await product_repo.get(p[0].id) for p in order_data.products]
             order = Order(
                 user_id=order_data.user_id,
                 total_price=order_data.total_price,
@@ -119,6 +139,13 @@ class OrderService:
             )
 
             session.add(order)
+
+            for order_product in order.order_products:
+                for product, quantity in order_data.products:
+                    if product.id == order_product.product_id:
+                        order_product.product_quantity = quantity
+                        break
+
             await session.commit()
             return order
 
@@ -141,7 +168,9 @@ class OrderService:
     ) -> List[Order]:
         async with self._get_session() as session:
             repo = self.db_manager.get_repo(OrderRepository, session)
-            return await repo.get_all_orders_with_products(skip=skip, limit=limit, filters=filters, order_by=order_by)
+            return await repo.get_all_orders_with_products(
+                skip=skip, limit=limit, filters=filters, order_by=order_by
+            )
 
     async def cancel_order(self, order_id: int) -> bool:
         await self.update_order(order_id, OrderUpdate(status=OrderStatus.PENDING))
@@ -152,6 +181,11 @@ class OrderService:
         async with self._get_session() as session:
             repo = self.db_manager.get_repo(OrderRepository, session)
             return await repo.update(order_id, update_data)
+
+    async def update_order_status(self, order_id: int, status: OrderStatus):
+        async with self._get_session() as session:
+            repo = self.db_manager.get_repo(OrderRepository, session)
+            return await repo.update_status(order_id, status)
 
     async def get_text_orders(self, orders: List[Order]) -> str:
         return await self._display_formatter.get_text_orders(orders)
@@ -174,3 +208,6 @@ class OrderService:
 
     async def get_text_order_price(self, price: float) -> str:
         return await self._display_formatter.get_text_order_price(price)
+
+    async def get_text_order(self, order: Order) -> str:
+        return await self.formatter.get_text_order(order)
