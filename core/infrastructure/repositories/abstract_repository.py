@@ -1,13 +1,16 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Generic, List, Optional, TypeVar
 
-from sqlalchemy import Select, delete, select, update, text
+from pydantic import BaseModel as PydanticBaseModel
+from sqlalchemy import Select, delete, select, text, update
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 
-ModelType = TypeVar("ModelType")
-CreateSchemaType = TypeVar("CreateSchemaType")
-UpdateSchemaType = TypeVar("UpdateSchemaType")
+from core.infrastructure.database.models import BaseModel
+
+ModelType = TypeVar("ModelType", bound=BaseModel)
+CreateSchemaType = TypeVar("CreateSchemaType", bound=PydanticBaseModel)
+UpdateSchemaType = TypeVar("UpdateSchemaType", bound=PydanticBaseModel)
 
 
 class AbstractRepository(ABC, Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
