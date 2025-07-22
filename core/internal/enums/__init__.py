@@ -1,5 +1,5 @@
 from .caption import CallbackAction, CaptionStrategyType
-from .handler import ButtonText, CallbackPrefixes, CallbackqueryText
+from .handler import ButtonText, CallbackPrefixes, CallbackqueryText, InlineQueryText
 from .order_status import OrderStatus
 
 __all__ = [
@@ -9,4 +9,5 @@ __all__ = [
     "ButtonText",
     "CallbackPrefixes",
     "CallbackqueryText",
+    "InlineQueryText",
 ]

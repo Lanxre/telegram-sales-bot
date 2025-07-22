@@ -1,7 +1,8 @@
 from io import BytesIO
 from typing import BinaryIO, Optional
+
 from aiogram import Bot
-from aiogram.types import Message, BufferedInputFile
+from aiogram.types import BufferedInputFile, Message
 
 
 class ImageSelector:
@@ -10,10 +11,9 @@ class ImageSelector:
 
     @staticmethod
     async def get_image_bytes(message: Message, bot: Bot) -> Optional[BinaryIO]:
-        
         if not message.photo:
             raise ValueError("Message does not contain a photo.")
-        
+
         photo = message.photo[-1]
         file = await bot.get_file(photo.file_id)
         return await bot.download_file(file.file_path)
@@ -21,7 +21,13 @@ class ImageSelector:
     @staticmethod
     async def get_image_file(image: bytes, file_name: str) -> BufferedInputFile:
         image_stream = BytesIO(image)
-        image_file = BufferedInputFile(
-            image_stream.getvalue(), filename=file_name
-        )
+        image_file = BufferedInputFile(image_stream.getvalue(), filename=file_name)
         return image_file
+
+    @staticmethod
+    async def get_image_file_id(message: Message) -> str:
+        if not message.photo:
+            raise ValueError("Message does not contain a photo.")
+
+        file_id = message.photo[-1].file_id
+        return file_id

@@ -10,6 +10,7 @@ class ProductCreate(BaseModel):
     description: Optional[str] = None
     price: float
     image: Optional[bytes] = None
+    image_file_id: Optional[str] = None
 
 
 class ProductUpdate(BaseModel):

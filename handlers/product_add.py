@@ -69,9 +69,11 @@ async def process_product_image(
     message: Message, state: FSMContext, bot: Bot, shop_service: ShopService
 ) -> None:
     image_bytes = await ImageSelector.get_image_bytes(message, bot)
+    image_file_id = await ImageSelector.get_image_file_id(message)
 
     product_data: ProductCreate = await StateToModel.from_context(state, ProductCreate)
     product_data.image = image_bytes.read()
+    product_data.image_file_id = image_file_id
 
     try:
         product = await shop_service.add_product(product_data)

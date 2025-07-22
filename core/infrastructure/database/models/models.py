@@ -26,6 +26,7 @@ class Product(BaseModel):
     description: Mapped[Optional[str]] = mapped_column(String)
     price: Mapped[float] = mapped_column(Float, nullable=False)
     image: Mapped[Optional[bytes]] = mapped_column(LargeBinary)
+    image_file_id: Mapped[Optional[str]] = mapped_column(String)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.now(timezone.utc)
     )
