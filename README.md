@@ -1,5 +1,9 @@
 # Telegram Shop Bot
-<p align="center"> ![bot_icon](/assets/icons/telegram_sales_bot_icon.png) </p>
+<p align="center">
+  <picture>
+    <img src="./assets/icons/telegram_sales_bot_icon.png" alt="Bot Logo">
+  </picture>
+</p>
 
 A Telegram bot for managing an online shop, built with Python and the following stack:
 
