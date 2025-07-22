@@ -5,6 +5,10 @@ class ButtonText(str, Enum):
     FINISH_DIALOG = "📝 Завершить диалог"
 
 
+class InlineQueryText(str, Enum):
+    CATALOG = "catalog"
+
+
 class CallbackqueryText(str, Enum):
     ORDER_CONFIRM = "order_confirm"
     ORDER_FINAL_CONFIRM = "final_confirm"

@@ -1,6 +1,13 @@
-from aiogram import Bot, Router, html
+from aiogram import Bot, F, Router, html
 from aiogram.filters import Command
-from aiogram.types import CallbackQuery, InputMediaPhoto, Message
+from aiogram.types import (
+    CallbackQuery,
+    InlineQuery,
+    InlineQueryResultArticle,
+    InputMediaPhoto,
+    InputTextMessageContent,
+    Message,
+)
 
 from core.infrastructure.services import (
     CaptionStrategyType,
@@ -8,7 +15,7 @@ from core.infrastructure.services import (
     DeleteCaptionArgs,
     ProductCaptionArgs,
 )
-from core.internal.enums import CallbackAction, CallbackPrefixes
+from core.internal.enums import CallbackAction, CallbackPrefixes, InlineQueryText
 from keyboards import (
     get_catalog_keyboard,
     get_confirm_delete_keyboard,
@@ -39,19 +46,25 @@ async def command_catalog(
             await message.answer_photo(
                 photo=image_file,
                 caption=caption,
-                reply_markup=get_catalog_keyboard(0, product.id, len(products), is_admin),
+                reply_markup=get_catalog_keyboard(
+                    0, product.id, len(products), is_admin
+                ),
             )
         else:
             await message.answer(
                 text=caption,
-                reply_markup=get_catalog_keyboard(0, product.id, len(products), is_admin),
+                reply_markup=get_catalog_keyboard(
+                    0, product.id, len(products), is_admin
+                ),
             )
 
     except Exception as e:
         await message.answer(catalog_service.config.error_text.format(error=str(e)))
 
 
-@catalog_router.callback_query(lambda c: CallbackPrefixes.has_prefix(c.data, CallbackPrefixes.CATALOG_INIT))
+@catalog_router.callback_query(
+    lambda c: CallbackPrefixes.has_prefix(c.data, CallbackPrefixes.CATALOG_INIT)
+)
 async def process_catalog_navigation(
     callback: CallbackQuery, bot: Bot, catalog_service: CatalogService, is_admin: bool
 ) -> None:
@@ -195,3 +208,31 @@ async def handle_edit(
             catalog_service.config.error_text.format(error=str(e))
         )
         await callback.answer()
+
+
+@catalog_router.inline_query(F.query == InlineQueryText.CATALOG.value)
+async def catalog_inline_query_handler(
+    inline_query: InlineQuery, catalog_service: CatalogService
+) -> None:
+    products = await catalog_service.get_products()
+
+    results = []
+    
+    for product in products:
+        caption = catalog_service.build_caption(
+            strategy_type=CaptionStrategyType.PRODUCT,
+            args=ProductCaptionArgs(product=product),
+        )
+        result_article = InlineQueryResultArticle(
+            id=str(product.id),
+            title=product.name,
+            description=product.description,
+            thumb_width=48,
+            thumb_height=48,
+            input_message_content=InputTextMessageContent(
+                message_text=f"🔍 {caption}"
+            ),
+        )
+        results.append(result_article)
+
+    await inline_query.answer(results)
