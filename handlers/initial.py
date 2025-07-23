@@ -1,6 +1,7 @@
-from aiogram import Router, html
+from aiogram import Router
 from aiogram.filters import Command, CommandStart
 from aiogram.types import Message, ReplyKeyboardRemove
+from aiogram_i18n import I18nContext
 
 from core.infrastructure.services import ShopService
 from core.internal.models import UserCreate
@@ -10,7 +11,9 @@ initial_router = Router()
 
 
 @initial_router.message(CommandStart())
-async def command_start(message: Message, shop_service: ShopService) -> None:
+async def command_start(
+    message: Message, shop_service: ShopService, i18n: I18nContext
+) -> None:
     try:
         await shop_service.create_user(
             UserCreate(
@@ -20,13 +23,18 @@ async def command_start(message: Message, shop_service: ShopService) -> None:
             )
         )
         await message.answer(
-            f"Приветсвую тебя {html.bold(message.from_user.full_name)}, этот бот создан для продажи моих предметов!\n"
-            + "Для списка всех команд используй /help",
+            text=i18n.get(
+                "greeting",
+                message.from_user.language_code,
+                user_full_name=message.from_user.full_name,
+            ),
             reply_markup=ReplyKeyboardRemove(),
         )
     except Exception as e:
         await message.answer(
-            f"Что-то пошло не так! {str(e)}",
+            text=i18n.get(
+                "initial_router_error", message.from_user.language_code, error=str(e)
+            ),
             reply_markup=ReplyKeyboardRemove(),
         )
 
